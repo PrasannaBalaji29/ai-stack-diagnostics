@@ -1,3 +1,5 @@
+from diagnostics.checks import python_env
+from diagnostics.safety import resolve_project_path
 from mcp.server.mcpserver import MCPServer
 
 mcp = MCPServer("ai-stack-diagnostics")
@@ -7,6 +9,13 @@ mcp = MCPServer("ai-stack-diagnostics")
 def ping() -> str:
     """Check that the server is alive."""
     return "ai-stack-diagnostics is running"
+
+
+@mcp.tool()
+def check_python_env(path: str) -> list[dict]:
+    """Check a project's virtual environment and requirements.txt."""
+    findings = python_env.run(resolve_project_path(path))
+    return [f.model_dump(mode="json") for f in findings]
 
 
 @mcp.resource("info://about")
