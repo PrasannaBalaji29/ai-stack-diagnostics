@@ -1,7 +1,6 @@
-from diagnostics.checks import python_env
+from diagnostics.checks import env_keys, ports, python_env
 from diagnostics.safety import resolve_project_path
 from mcp.server.mcpserver import MCPServer
-from diagnostics.checks import env_keys
 
 mcp = MCPServer("ai-stack-diagnostics")
 
@@ -23,6 +22,13 @@ def check_python_env(path: str) -> list[dict]:
 def check_env_and_keys(path: str) -> list[dict]:
     """Check .env against .env.example. Never returns secret values."""
     findings = env_keys.run(resolve_project_path(path))
+    return [f.model_dump(mode="json") for f in findings]
+
+
+@mcp.tool()
+def check_ports(ports_to_check: list[int] | None = None) -> list[dict]:
+    """Check if ports are free, and list common AI service ports in use."""
+    findings = ports.run(ports_to_check)
     return [f.model_dump(mode="json") for f in findings]
 
 

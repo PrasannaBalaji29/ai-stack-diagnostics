@@ -20,7 +20,7 @@ def _parse_env(file: Path) -> dict[str, str]:
 
 def _is_unset(value: str) -> bool:
     v = value.lower()
-    return v == "" or any(v.startswith(p) or p in v for p in PLACEHOLDERS)
+    return v == "" or any(v.startswith(p) for p in PLACEHOLDERS)
 
 
 def _env_is_gitignored(project: Path) -> bool:
