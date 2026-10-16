@@ -1,3 +1,4 @@
-mcp
-pydantic
-not-a-real-package
+mcp>=2.3,<3
+pydantic>=2
+packaging>=23
+pytest>=8

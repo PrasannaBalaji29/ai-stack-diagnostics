@@ -1,0 +1,13 @@
+[project]
+name = "ai-stack-diagnostics"
+version = "0.1.0"
+description = "Read-only MCP server that diagnoses AI/ML project setups"
+requires-python = ">=3.10"
+dependencies = ["mcp>=2.3,<3", "pydantic>=2", "packaging>=23"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

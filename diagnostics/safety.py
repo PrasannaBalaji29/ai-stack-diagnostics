@@ -1,8 +1,70 @@
+"""Path validation and safe file reading. All file access goes through here."""
+
+from __future__ import annotations
+
+import codecs
+import os
 from pathlib import Path
+
+MAX_READ_BYTES = 1_000_000
+
+
+class ProjectPathError(ValueError):
+    """The project path is missing, unsafe, or unusable."""
 
 
 def resolve_project_path(path: str) -> Path:
-    project = Path(path).expanduser().resolve()
+    if not isinstance(path, str) or not path.strip():
+        raise ProjectPathError("The project path is empty.")
+    cleaned = path.strip().strip("\"'")
+    try:
+        project = Path(cleaned).expanduser().resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ProjectPathError(f"Cannot resolve the path: {exc}") from exc
+    if not project.exists():
+        raise ProjectPathError(f"Path does not exist: {project}")
     if not project.is_dir():
-        raise ValueError(f"Not a directory: {project}")
+        raise ProjectPathError(f"Not a directory: {project}")
+    if project == Path(project.anchor):
+        raise ProjectPathError("Refusing to scan a drive root. Pick a project folder.")
+    try:
+        if project == Path.home().resolve():
+            raise ProjectPathError("Refusing to scan the whole home folder. Pick a project folder.")
+    except RuntimeError:
+        pass
+    if not os.access(project, os.R_OK | os.X_OK):
+        raise ProjectPathError(f"No permission to read: {project}")
     return project
+
+
+def safe_file(project: Path, candidate: str | Path) -> Path | None:
+    """Return the resolved file path only if it is a real file inside the project."""
+    try:
+        path = Path(candidate)
+        if not path.is_absolute():
+            path = project / path
+        resolved = path.resolve()
+        if not resolved.is_relative_to(project.resolve()):
+            return None  # outside the project (e.g. a symlink escape or ../)
+        return resolved if resolved.is_file() else None
+    except (OSError, RuntimeError, ValueError):
+        return None
+
+
+def read_text(path: Path, limit: int = MAX_READ_BYTES) -> str | None:
+    """Read a text file, handling UTF-8, UTF-8 BOM and UTF-16 (Windows PowerShell)."""
+    try:
+        with path.open("rb") as fh:
+            raw = fh.read(limit)
+    except OSError:
+        return None
+    if raw.startswith(codecs.BOM_UTF8):
+        return raw[len(codecs.BOM_UTF8):].decode("utf-8", errors="replace")
+    if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return raw.decode("utf-16", errors="replace")
+    if len(raw) >= 4 and raw[1:2] == b"\x00" and raw[3:4] == b"\x00":
+        return raw.decode("utf-16-le", errors="replace")  # UTF-16 without a BOM
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp1252", errors="replace")
