@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from diagnostics.checks import env_keys, ports, python_env
+from diagnostics.checks import env_keys, ollama, ports, python_env
 from diagnostics.registry import run_check
 from diagnostics.safety import ProjectPathError, resolve_project_path
 from diagnostics.scan import scan
@@ -50,6 +50,12 @@ def check_env_and_keys(path: str) -> list[dict]:
 def check_ports(ports_to_check: list[int] | None = None) -> list[dict]:
     """Check whether ports are free, and list common AI service ports in use."""
     return run_check("ports", lambda: ports.run(ports_to_check))
+
+
+@mcp.tool()
+def check_ollama(model: str | None = None) -> list[dict]:
+    """Check the local Ollama server: running, version, installed models, and GPU use. Optionally verify one model name."""
+    return run_check("ollama", lambda: ollama.run(model))
 
 
 @mcp.resource("info://about")

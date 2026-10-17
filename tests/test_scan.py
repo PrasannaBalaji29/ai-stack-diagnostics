@@ -87,3 +87,9 @@ def test_pyproject_deps_detected(project):
     (project / "pyproject.toml").write_text('[project]\nname="x"\ndependencies=["openai>=1","qdrant-client"]\n')
     r = S.scan(project)
     assert {"OpenAI API", "Qdrant"} <= set(r["detected_stack"])
+
+
+def test_ollama_project_suggests_ollama_check(project):
+    (project / "app.py").write_text("import ollama\n")
+    r = S.scan(project)
+    assert "check_ollama" in r["suggested_checks"] and 11434 in r["suggested_ports"]

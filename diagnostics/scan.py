@@ -187,6 +187,8 @@ def scan(project: Path) -> dict:
         checks.append("check_env_and_keys")
     if ports:
         checks.append("check_ports")
+    if "Ollama" in stack:
+        checks.append("check_ollama")
 
     return {
         "project": project.name,
