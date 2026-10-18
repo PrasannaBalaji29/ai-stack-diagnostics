@@ -96,15 +96,15 @@ def _ollama_installed() -> bool:
     if shutil.which("ollama"):
         return True
     local = os.environ.get("LOCALAPPDATA")
-    return bool(local) and (Path(local) / "Programs" / "Ollama" / "ollama.exe").is_file()
+    return bool(local) and (Path(str(local)) / "Programs" / "Ollama" / "ollama.exe").is_file()
 
 
 def _gb(num_bytes: float) -> str:
     return f"{num_bytes / 1_000_000_000:.1f} GB"
 
 
-def _model_names(data: dict) -> list[tuple[str, int]]:
-    out = []
+def _model_names(data: dict) -> list[tuple[str, float]]:
+    out: list[tuple[str, float]] = []
     for entry in data.get("models") or []:
         if not isinstance(entry, dict):
             continue

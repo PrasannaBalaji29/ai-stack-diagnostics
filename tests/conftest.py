@@ -37,3 +37,26 @@ def titles(findings):
 
 def by_severity(findings, severity):
     return [f for f in findings if f.severity.value == severity]
+
+
+@pytest.fixture
+def make_dist():
+    """Write a realistic installed package (METADATA, top_level.txt, RECORD) into a venv."""
+    def _make(venv: Path, name: str, version: str, requires=(), modules=(), requires_python: str | None = None,
+              with_top_level: bool = True, editable: bool = False) -> None:
+        site_dirs = list(venv.glob("lib/python*/site-packages")) + list((venv / "Lib").glob("site-packages"))
+        site = site_dirs[0]
+        info = site / f"{name.replace('-', '_')}-{version}.dist-info"
+        info.mkdir(exist_ok=True)
+        lines = ["Metadata-Version: 2.1", f"Name: {name}", f"Version: {version}"]
+        if requires_python:
+            lines.append(f"Requires-Python: {requires_python}")
+        lines += [f"Requires-Dist: {r}" for r in requires]
+        (info / "METADATA").write_text("\n".join(lines) + "\n")
+        mods = list(modules) or [name.replace("-", "_")]
+        if with_top_level:
+            (info / "top_level.txt").write_text("\n".join(mods) + "\n")
+        (info / "RECORD").write_text("\n".join(f"{m}/__init__.py,sha256=x,1" for m in mods) + "\n")
+        if editable:
+            (info / "direct_url.json").write_text('{"url":"file:///x","dir_info":{"editable":true}}')
+    return _make

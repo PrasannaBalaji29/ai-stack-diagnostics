@@ -93,3 +93,41 @@ def test_ollama_project_suggests_ollama_check(project):
     (project / "app.py").write_text("import ollama\n")
     r = S.scan(project)
     assert "check_ollama" in r["suggested_checks"] and 11434 in r["suggested_ports"]
+
+
+def test_torch_project_suggests_gpu_check(project):
+    (project / "requirements.txt").write_text("torch\n")
+    assert "check_gpu" in S.scan(project)["suggested_checks"]
+    (project / "app.py").write_text("import torchvision\n")
+    assert "check_gpu" in S.scan(project)["suggested_checks"]
+
+
+def test_non_torch_project_does_not_suggest_gpu_check(project):
+    (project / "requirements.txt").write_text("requests\n")
+    assert "check_gpu" not in S.scan(project)["suggested_checks"]
+
+
+def test_other_libraries_lists_every_unknown_import(project):
+    (project / "app.py").write_text("import cv2\nimport matplotlib.pyplot as plt\nfrom keras import layers\nimport os\nimport openai\n")
+    r = S.scan(project)
+    assert {"cv2", "matplotlib", "keras"} <= set(r["other_libraries"])
+    assert "os" not in r["other_libraries"] and "openai" not in r["other_libraries"]  # stdlib and known stack excluded
+
+
+def test_other_libraries_excludes_local_modules_and_removed_stdlib(project):
+    (project / "helpers.py").write_text("")
+    (project / "app.py").write_text("import helpers\nimport distutils\nimport somethirdparty\n")
+    assert S.scan(project)["other_libraries"] == ["somethirdparty"]
+
+
+def test_scan_suggests_imports_and_compat(project, make_venv):
+    (project / "app.py").write_text("import os\n")
+    r = S.scan(project)
+    assert "check_imports" in r["suggested_checks"] and "check_compat" not in r["suggested_checks"] and r["has_venv"] is False
+    make_venv(project)
+    r = S.scan(project)
+    assert "check_compat" in r["suggested_checks"] and r["has_venv"] is True
+
+
+def test_empty_folder_suggests_only_python_env(project):
+    assert S.scan(project)["suggested_checks"] == ["check_python_env"]

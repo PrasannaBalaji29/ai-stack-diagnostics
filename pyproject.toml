@@ -3,11 +3,24 @@ name = "ai-stack-diagnostics"
 version = "0.1.0"
 description = "Read-only MCP server that diagnoses AI/ML project setups"
 requires-python = ">=3.10"
-dependencies = ["mcp>=2.3,<3", "pydantic>=2", "packaging>=23"]
+dependencies = ["mcp>=2.3,<3", "pydantic>=2", "packaging>=23", "tomli>=2; python_version < '3.11'"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff", "mypy"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "UP", "S", "SIM"]
+ignore = ["E501", "S101", "S603", "S607", "S110", "SIM105"]
+
+[tool.ruff.lint.per-file-ignores]
+# loopback-only http(s) requests; "0.0.0.0" is only compared, never bound; no SQL anywhere
+"diagnostics/checks/ollama.py" = ["S104", "S310"]
+"diagnostics/checks/env_keys.py" = ["S608"]
+"tests/*" = ["S", "UP012", "E702"]
+
+[tool.mypy]
+ignore_missing_imports = true

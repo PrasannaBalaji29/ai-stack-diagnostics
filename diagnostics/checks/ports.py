@@ -46,7 +46,7 @@ def _probe(ports: list[int]) -> dict[int, bool]:
     if not ports:
         return {}
     with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(ports))) as pool:
-        return dict(zip(ports, pool.map(_in_use, ports)))
+        return dict(zip(ports, pool.map(_in_use, ports), strict=True))
 
 
 def _who_uses(port: int) -> str:

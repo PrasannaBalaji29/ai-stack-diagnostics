@@ -5,10 +5,12 @@ from __future__ import annotations
 import ast
 import json
 import os
+import sys
 from pathlib import Path
 
 from packaging.utils import canonicalize_name
 
+from diagnostics.checks.python_env import _find_venvs
 from diagnostics.requirements import collect_requirements
 from diagnostics.safety import read_text, safe_file
 
@@ -73,6 +75,68 @@ IMPORT_ALIASES = {
 }
 
 
+STDLIB_NAMES = frozenset(sys.stdlib_module_names)
+# Standard-library modules that were REMOVED, with the first Python version that no longer has them.
+REMOVED_STDLIB: dict[str, tuple[int, int]] = {
+    **{m: (3, 12) for m in ("asynchat", "asyncore", "distutils", "imp", "smtpd")},
+    **{m: (3, 13) for m in (
+        "aifc", "audioop", "cgi", "cgitb", "chunk", "crypt", "imghdr", "lib2to3", "mailcap", "msilib", "nis",
+        "nntplib", "ossaudiodev", "pipes", "sndhdr", "spwd", "sunau", "telnetlib", "uu", "xdrlib",
+    )},
+}
+_OPTIONAL_CATCHES = {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
+
+
+def _catches_import_error(handler: ast.ExceptHandler) -> bool:
+    kind = handler.type
+    if kind is None:
+        return True
+    nodes = kind.elts if isinstance(kind, ast.Tuple) else [kind]
+    return any(isinstance(n, ast.Name) and n.id in _OPTIONAL_CATCHES for n in nodes)
+
+
+class _ImportCollector(ast.NodeVisitor):
+    """Collects top-level imported names. A name is 'optional' only if every use is inside a
+    try/except ImportError block (the common pattern for optional dependencies)."""
+
+    def __init__(self) -> None:
+        self.found: dict[str, bool] = {}
+        self._guarded = 0
+
+    def _add(self, name: str) -> None:
+        top = name.split(".")[0]
+        self.found[top] = self.found.get(top, True) and self._guarded > 0
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            self._add(alias.name)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.level == 0 and node.module:
+            self._add(node.module)
+
+    def visit_Try(self, node: ast.Try) -> None:
+        guarded = any(_catches_import_error(h) for h in node.handlers)
+        self._guarded += guarded
+        for stmt in node.body:
+            self.visit(stmt)
+        self._guarded -= guarded
+        for other in [*node.handlers, *node.orelse, *node.finalbody]:
+            self.visit(other)
+
+    visit_TryStar = visit_Try  # type: ignore[assignment]
+
+
+def raw_imports(source: str) -> dict[str, bool]:
+    """Top-level imported module names -> True if only imported optionally. Never raises."""
+    try:
+        collector = _ImportCollector()
+        collector.visit(ast.parse(source))
+        return collector.found
+    except Exception:  # noqa: BLE001 - syntax errors, null bytes, absurd nesting
+        return {}
+
+
 def _walk_sources(project: Path) -> tuple[list[Path], list[Path], bool]:
     py_files: list[Path] = []
     notebooks: list[Path] = []
@@ -111,7 +175,7 @@ def _notebook_source(path: Path) -> str:
         if isinstance(cell, dict) and cell.get("cell_type") == "code":
             source = cell.get("source", "")
             source = "".join(source) if isinstance(source, list) else str(source)
-            lines.extend(l for l in source.splitlines() if not l.lstrip().startswith(("%", "!")))
+            lines.extend(ln for ln in source.splitlines() if not ln.lstrip().startswith(("%", "!")))
     return "\n".join(lines)
 
 
@@ -156,10 +220,17 @@ def scan(project: Path) -> dict:
     local = {str(canonicalize_name(n)) for n in _local_modules(project)}
 
     imported: set[str] = set()
+    raw: dict[str, bool] = {}
     for path in py_files:
-        imported |= _imports(read_text(path) or "")
+        text = read_text(path) or ""
+        imported |= _imports(text)
+        for name, optional in raw_imports(text).items():
+            raw[name] = raw.get(name, True) and optional
     for path in notebooks:
-        imported |= _imports(_notebook_source(path))
+        text = _notebook_source(path)
+        imported |= _imports(text)
+        for name, optional in raw_imports(text).items():
+            raw[name] = raw.get(name, True) and optional
     imported = {i for i in imported if str(canonicalize_name(i)) not in local}
 
     reqs = collect_requirements(project)
@@ -180,8 +251,17 @@ def scan(project: Path) -> dict:
         if port:
             ports.add(port)
 
+    # Any other third-party library the code imports, so nothing is missed just because it is not on the list above.
+    local_names = {n.lower() for n in local}
+    other_imports = sorted(
+        name for name in raw
+        if name not in STDLIB_NAMES and name not in REMOVED_STDLIB and name.lower() not in local_names
+        and _match(IMPORT_ALIASES.get(name, name)) is None
+    )
+
     has_env = safe_file(project, ".env") is not None
     has_template = any(safe_file(project, n) for n in (".env.example", ".env.sample", ".env.template", ".env.dist"))
+    has_venv = bool(_find_venvs(project))
     checks = ["check_python_env"]
     if has_env or has_template:
         checks.append("check_env_and_keys")
@@ -189,6 +269,12 @@ def scan(project: Path) -> dict:
         checks.append("check_ports")
     if "Ollama" in stack:
         checks.append("check_ollama")
+    if "PyTorch" in stack:
+        checks.append("check_gpu")
+    if py_files or notebooks:
+        checks.append("check_imports")
+    if has_venv:
+        checks.append("check_compat")
 
     return {
         "project": project.name,
@@ -199,7 +285,9 @@ def scan(project: Path) -> dict:
         "has_pyproject": safe_file(project, "pyproject.toml") is not None,
         "has_env_file": has_env,
         "has_env_template": has_template,
+        "has_venv": has_venv,
         "detected_stack": stack,
+        "other_libraries": other_imports[:80],
         "categories": categories,
         "suggested_ports": sorted(ports),
         "suggested_checks": checks,

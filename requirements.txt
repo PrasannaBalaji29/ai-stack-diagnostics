@@ -1,4 +1,7 @@
 mcp>=2.3,<3
 pydantic>=2
 packaging>=23
+tomli>=2; python_version < "3.11"
 pytest>=8
+ruff
+mypy

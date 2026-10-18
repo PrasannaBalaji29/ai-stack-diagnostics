@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
 
 from diagnostics.safety import read_text, safe_file
 
@@ -113,3 +114,16 @@ def collect_requirements(project: Path) -> RequirementSet:
         _load_file(project, req, set(), 0, out)
     _load_pyproject(project, out)
     return out
+
+
+def read_requires_python(project: Path) -> SpecifierSet | None:
+    """The Python versions the project says it supports (pyproject.toml requires-python)."""
+    path = safe_file(project, "pyproject.toml")
+    if path is None or tomllib is None:
+        return None
+    try:
+        data = tomllib.loads(read_text(path) or "")
+        value = data.get("project", {}).get("requires-python")
+        return SpecifierSet(value) if isinstance(value, str) and value.strip() else None
+    except (InvalidSpecifier, Exception):  # noqa: BLE001 - an unreadable file means "unknown", not a crash
+        return None

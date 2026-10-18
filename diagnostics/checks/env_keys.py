@@ -133,10 +133,11 @@ def run(project: Path) -> list[Finding]:
         ))
 
     if env_path is None:
+        template_name = template[0] if template else "The template file"
         findings.append(Finding(
             check=CHECK, severity=Severity.warning, title=".env is missing",
-            detail=f"{template[0]} exists but there is no .env to hold the real values.",
-            fix=f"Copy-Item {template[0]} .env",
+            detail=f"{template_name} exists but there is no .env to hold the real values.",
+            fix=f"Copy-Item {template_name} .env",
         ))
         return findings
 

@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from diagnostics.checks import env_keys, ollama, ports, python_env
+from diagnostics.checks import compat, env_keys, gpu, imports, ollama, ports, python_env
 from diagnostics.registry import run_check
 from diagnostics.safety import ProjectPathError, resolve_project_path
 from diagnostics.scan import scan
@@ -56,6 +56,24 @@ def check_ports(ports_to_check: list[int] | None = None) -> list[dict]:
 def check_ollama(model: str | None = None) -> list[dict]:
     """Check the local Ollama server: running, version, installed models, and GPU use. Optionally verify one model name."""
     return run_check("ollama", lambda: ollama.run(model))
+
+
+@mcp.tool()
+def check_gpu(path: str) -> list[dict]:
+    """Check whether the project's PyTorch build matches the NVIDIA driver and CUDA version on this machine."""
+    return run_check("gpu", lambda: gpu.run(resolve_project_path(path)))
+
+
+@mcp.tool()
+def check_imports(path: str) -> list[dict]:
+    """Compare the libraries the code imports with what is installed and listed in requirements (finds missing libraries and removed standard-library modules)."""
+    return run_check("imports", lambda: imports.run(resolve_project_path(path)))
+
+
+@mcp.tool()
+def check_compat(path: str) -> list[dict]:
+    """Check the venv's Python version against the project, and installed packages for version conflicts or missing dependencies."""
+    return run_check("compat", lambda: compat.run(resolve_project_path(path)))
 
 
 @mcp.resource("info://about")
