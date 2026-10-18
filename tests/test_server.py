@@ -5,7 +5,7 @@ import server
 
 def test_all_tools_registered():
     names = {t.name for t in asyncio.run(server.mcp.list_tools())}
-    assert names == {"ping", "scan_project", "check_python_env", "check_env_and_keys", "check_ports", "check_ollama", "check_gpu", "check_imports", "check_compat"}
+    assert names == {"ping", "scan_project", "check_python_env", "check_env_and_keys", "check_ports", "check_ollama", "check_gpu", "check_imports", "check_compat", "diagnose"}
 
 
 def test_ping():

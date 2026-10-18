@@ -4,6 +4,7 @@ import logging
 import sys
 
 from diagnostics.checks import compat, env_keys, gpu, imports, ollama, ports, python_env
+from diagnostics.diagnose import diagnose as run_diagnose
 from diagnostics.registry import run_check
 from diagnostics.safety import ProjectPathError, resolve_project_path
 from diagnostics.scan import scan
@@ -32,6 +33,18 @@ def scan_project(path: str) -> dict:
     except Exception as exc:  # noqa: BLE001
         logger.exception("scan_project crashed")
         return {"error": f"Scan failed unexpectedly: {type(exc).__name__}. See the server log."}
+
+
+@mcp.tool()
+def diagnose(path: str) -> dict:
+    """START HERE. Scans the project, runs only the checks it needs, and returns one prioritized report: status, score, and a numbered list of what to fix first."""
+    try:
+        return run_diagnose(resolve_project_path(path))
+    except ProjectPathError as exc:
+        return {"error": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("diagnose crashed")
+        return {"error": f"Diagnosis failed unexpectedly: {type(exc).__name__}. See the server log."}
 
 
 @mcp.tool()

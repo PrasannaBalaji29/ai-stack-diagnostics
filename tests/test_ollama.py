@@ -36,7 +36,10 @@ def fake_ollama():
                 for k, v in (headers[0] if headers else {}).items():
                     self.send_header(k, v)
                 self.end_headers()
-                self.wfile.write(body.encode() if isinstance(body, str) else body)
+                try:
+                    self.wfile.write(body.encode() if isinstance(body, str) else body)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass  # the client hung up early on purpose (response-size cap test)
 
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True).start()

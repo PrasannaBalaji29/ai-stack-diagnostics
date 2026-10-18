@@ -10,7 +10,7 @@ import server
 from diagnostics.checks import gpu
 
 ALL_PROJECT_TOOLS = (server.check_python_env, server.check_env_and_keys, server.check_gpu,
-                     server.check_imports, server.check_compat)
+                     server.check_imports, server.check_compat, server.diagnose)
 
 
 def _assert_clean(result):
