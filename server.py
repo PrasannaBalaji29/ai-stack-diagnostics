@@ -14,7 +14,21 @@ from mcp.server.mcpserver import MCPServer
 logging.basicConfig(level=logging.INFO, stream=sys.stderr, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger("ai-stack-diagnostics")
 
-mcp = MCPServer("ai-stack-diagnostics")
+INSTRUCTIONS = (
+    "This server runs on the user's OWN computer and can read their local project folders directly "
+    "(for example C:\\Users\\name\\my-project). When the user asks to diagnose, debug, health-check or "
+    "troubleshoot an AI/ML project on their machine, or gives a local folder path, call the `diagnose` tool "
+    "with that path instead of using a sandbox, shell or file upload. It is read-only: it never changes files, "
+    "never installs anything, and never returns secret values. Use the individual check_* tools only when the "
+    "user asks about one specific area."
+)
+
+mcp = MCPServer(
+    "ai-stack-diagnostics",
+    title="AI Stack Diagnostics",
+    description="Read-only diagnosis of AI/ML project setups on the user's own computer.",
+    instructions=INSTRUCTIONS,
+)
 
 
 @mcp.tool()
@@ -25,7 +39,7 @@ def ping() -> str:
 
 @mcp.tool()
 def scan_project(path: str) -> dict:
-    """Detect a project's AI stack (read-only) and suggest which checks to run."""
+    """Detect the AI stack of a project folder on the user's own computer (read-only) and list the libraries it imports. Prefer `diagnose` unless only the stack overview is wanted."""
     try:
         return scan(resolve_project_path(path))
     except ProjectPathError as exc:
@@ -37,7 +51,7 @@ def scan_project(path: str) -> dict:
 
 @mcp.tool()
 def diagnose(path: str) -> dict:
-    """START HERE. Scans the project, runs only the checks it needs, and returns one prioritized report: status, score, and a numbered list of what to fix first."""
+    """START HERE to diagnose, debug or health-check an AI/ML project folder on the user's own computer (a local path such as C:\\Users\\name\\project). Runs on the user's machine and reads the folder directly, so use it instead of any sandbox. Read-only. Scans the project, runs only the checks it needs, and returns one prioritized report: status, score, and a numbered list of what to fix first."""
     try:
         return run_diagnose(resolve_project_path(path))
     except ProjectPathError as exc:
@@ -89,16 +103,24 @@ def check_compat(path: str) -> list[dict]:
     return run_check("compat", lambda: compat.run(resolve_project_path(path)))
 
 
+@mcp.prompt(
+    name="diagnose_project",
+    title="Diagnose my project",
+    description="Run a full read-only diagnosis of an AI/ML project folder on this computer.",
+)
+def diagnose_project(path: str) -> str:
+    return (
+        f"Use the `diagnose` tool from the ai-stack-diagnostics server on this local folder: {path}\n\n"
+        "Do not use a sandbox or ask me to upload anything; the tool reads the folder on my computer directly. "
+        "Then explain the result in plain words: the status and score, what to fix first and why, and the exact "
+        "commands to run. If nothing is wrong, say so briefly. Do not run any fix command yourself."
+    )
+
+
 @mcp.resource("info://about")
 def about() -> str:
     """Basic info about this server."""
     return "Read-only diagnostics for AI/ML project setups. It never modifies files or runs fixes."
-
-
-@mcp.prompt()
-def diagnose_prompt(path: str) -> str:
-    """Template that asks Claude to diagnose a project."""
-    return f"Diagnose the AI project at {path}. Start with scan_project, then run the suggested checks and list problems by priority."
 
 
 if __name__ == "__main__":

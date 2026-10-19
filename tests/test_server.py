@@ -51,3 +51,27 @@ def test_new_tools_bad_path_and_serialisable(project):
         out = tool("/definitely/not/here")
         assert out[0]["severity"] == "error" and "does not exist" in out[0]["detail"]
         json.dumps(tool(str(project)))
+
+
+def test_server_tells_claude_it_runs_on_the_users_computer():
+    assert "OWN computer" in server.INSTRUCTIONS and "diagnose" in server.INSTRUCTIONS
+    assert "never returns secret values" in server.INSTRUCTIONS
+
+
+def test_every_tool_has_a_useful_description():
+    import asyncio
+    tools = asyncio.run(server.mcp.list_tools())
+    assert {t.name for t in tools} >= {"diagnose", "scan_project", "check_gpu"}
+    for tool in tools:
+        assert tool.description and len(tool.description) >= 30, tool.name
+    diag = next(t for t in tools if t.name == "diagnose")
+    assert "own computer" in diag.description and "sandbox" in diag.description and "START HERE" in diag.description
+
+
+def test_diagnose_prompt_is_registered_and_names_the_tool():
+    import asyncio
+    prompts = asyncio.run(server.mcp.list_prompts())
+    assert [p.name for p in prompts] == ["diagnose_project"]  # exactly one, no stale duplicates
+    result = asyncio.run(server.mcp.get_prompt("diagnose_project", {"path": r"C:\Users\x\proj"}))
+    text = result.messages[0].content.text
+    assert "diagnose" in text and r"C:\Users\x\proj" in text and "sandbox" in text
