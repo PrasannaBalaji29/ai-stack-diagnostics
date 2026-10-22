@@ -7,7 +7,11 @@ from __future__ import annotations
 
 import csv
 import io
+import os
 import re
+import threading
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from email.parser import Parser
 from pathlib import Path
@@ -21,6 +25,8 @@ from packaging.version import InvalidVersion, Version
 from diagnostics.safety import read_text
 
 MAX_DISTS = 5000
+LOAD_WORKERS = 8          # reading many small files is waiting time, so threads help a lot (especially on Windows)
+CACHE_SIZE = 8            # remembered environments (live mode re-scans the same one every few seconds)
 MAX_METADATA_BYTES = 256_000
 MAX_RECORD_BYTES = 2_000_000
 _DIST_DIR_RE = re.compile(r"^(?P<n>.+?)-(?P<v>\d[^-]*?)\.dist-info$", re.IGNORECASE)
@@ -140,22 +146,62 @@ def _load_one(entry: Path, root: Path) -> Dist | None:
                 modules=modules, editable=is_editable)
 
 
-def load_dists(site_packages: list[Path], venv: Path) -> dict[str, Dist]:
-    root = venv.resolve()
-    dists: dict[str, Dist] = {}
+_cache: OrderedDict[tuple, dict[str, Dist]] = OrderedDict()
+_cache_lock = threading.Lock()
+
+
+def clear_cache() -> None:
+    with _cache_lock:
+        _cache.clear()
+
+
+def _dist_entries(site_packages: list[Path]) -> list[tuple[Path, int]]:
+    """The .dist-info folders (with their modification times), in a stable order."""
+    found: list[tuple[Path, int]] = []
     for site in site_packages:
         try:
-            entries = sorted(site.iterdir(), key=lambda p: p.name)
+            with os.scandir(site) as it:
+                for entry in it:
+                    if entry.name.endswith(".dist-info"):
+                        try:
+                            if entry.is_dir():
+                                # A real stat of the path, not entry.stat(): on Windows the time in a
+                                # directory listing can lag behind and change between two scans of an
+                                # unchanged venv, which made the cache miss every other time.
+                                found.append((Path(entry.path), os.stat(entry.path).st_mtime_ns))
+                        except OSError:
+                            continue
         except OSError:
             continue
-        for entry in entries:
-            if len(dists) >= MAX_DISTS:
-                return dists
-            if entry.name.endswith(".dist-info") and entry.is_dir():
-                dist = _load_one(entry, root)
-                if dist is not None:
-                    dists[dist.name] = dist
-    return dists
+    return sorted(found, key=lambda item: item[0].name)
+
+
+def load_dists(site_packages: list[Path], venv: Path) -> dict[str, Dist]:
+    """Reads every installed package once. The result is cached until the list of installed
+    packages (names and folder times) changes, so one scan, or repeated live-mode scans, read the
+    files a single time instead of once per check."""
+    root = venv.resolve()
+    entries = _dist_entries(site_packages)[:MAX_DISTS]
+    key = (str(root), tuple((str(path), mtime) for path, mtime in entries))
+    with _cache_lock:
+        cached = _cache.get(key)
+        if cached is not None:
+            _cache.move_to_end(key)
+            return dict(cached)  # a copy: callers can never change what is cached
+    if entries:
+        with ThreadPoolExecutor(max_workers=min(LOAD_WORKERS, len(entries))) as pool:
+            loaded = list(pool.map(lambda item: _load_one(item[0], root), entries))
+    else:
+        loaded = []
+    dists: dict[str, Dist] = {}
+    for dist in loaded:
+        if dist is not None:
+            dists[dist.name] = dist
+    with _cache_lock:
+        _cache[key] = dists
+        while len(_cache) > CACHE_SIZE:
+            _cache.popitem(last=False)
+    return dict(dists)
 
 
 def module_index(dists: dict[str, Dist]) -> dict[str, set[str]]:

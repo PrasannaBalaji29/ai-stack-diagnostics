@@ -85,7 +85,7 @@ def test_empty_folder(project):
 
 def test_torch_project_runs_gpu_check(project, make_venv, make_dist, monkeypatch):
     from diagnostics.checks import gpu
-    monkeypatch.setattr(gpu, "read_gpu", lambda: gpu.GpuInfo(state="none"))
+    monkeypatch.setattr(gpu, "read_gpu", lambda *a, **k: gpu.GpuInfo(state="none"))
     venv = make_venv(project, version="3.13.0")
     make_dist(venv, "torch", "2.5.1+cpu")
     write(project, "requirements.txt", "torch\n")
@@ -137,3 +137,25 @@ def test_server_tool_registered_and_works(project, make_venv):
     make_venv(project)
     out = server.diagnose(str(project))
     assert out["status"] in ("healthy", "needs attention", "broken") and "fix_first" in out
+
+
+def test_by_check_groups_findings_with_worst_status(project, make_venv):
+    make_venv(project, version="3.9.7")
+    write(project, "pyproject.toml", '[project]\nname="x"\nrequires-python=">=3.10"\n')
+    write(project, "app.py", "import cv2\n")
+    r = D.diagnose(project)
+    assert r["all_checks"] == ["compat", "python_env", "imports", "env_keys", "ollama", "ports", "gpu"]
+    assert set(r["by_check"]) == set(r["checks_run"])
+    assert r["by_check"]["compat"]["status"] == "critical"
+    assert r["by_check"]["imports"]["status"] == "critical"
+    for entry in r["by_check"].values():
+        assert entry["findings"] and set(entry["findings"][0]) == {"severity", "title", "detail", "fix"}
+
+
+def test_healthy_project_by_check_all_ok(project, make_venv, make_dist):
+    venv = make_venv(project, version="3.13.0")
+    make_dist(venv, "requests", "2.32.0")
+    write(project, "app.py", "import requests\n")
+    write(project, "requirements.txt", "requests\n")
+    r = D.diagnose(project)
+    assert {v["status"] for v in r["by_check"].values()} <= {"ok", "info"}  # nothing needs fixing

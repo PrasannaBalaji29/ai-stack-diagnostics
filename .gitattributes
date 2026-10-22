@@ -1,0 +1,4 @@
+# One line-ending style for everyone (also stops the "LF will be replaced by CRLF" warnings on Windows)
+* text=auto eol=lf
+*.png binary
+*.gif binary

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 import re
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -51,20 +50,48 @@ class GpuInfo:
     error: str | None = None
 
 
-def _nvidia_smi_path() -> str | None:
-    """Known install locations first (they are often missing from PATH on Windows)."""
-    candidates: list[str] = []
+def _is_inside(path: Path, folder: Path) -> bool:
+    try:
+        return path.resolve().is_relative_to(folder.resolve())
+    except (OSError, RuntimeError, ValueError):
+        return True  # cannot tell: treat as unsafe
+
+
+def _nvidia_smi_path(avoid: Path | None = None) -> str | None:
+    """Find nvidia-smi without ever picking a program planted in the scanned project or current folder.
+
+    Known system locations come first. The PATH search accepts only absolute PATH entries, ignores
+    the current folder and anything inside `avoid` (the project being scanned), and on Windows
+    accepts only .exe files.
+    """
+    names = ["nvidia-smi.exe"] if sys.platform == "win32" else ["nvidia-smi"]
     if sys.platform == "win32":
         root = os.environ.get("SYSTEMROOT", r"C:\Windows")
         program_files = os.environ.get("PROGRAMFILES", r"C:\Program Files")
-        candidates = [
+        for known in (
             os.path.join(root, "System32", "nvidia-smi.exe"),
             os.path.join(program_files, "NVIDIA Corporation", "NVSMI", "nvidia-smi.exe"),
-        ]
-    for candidate in candidates:
-        if os.path.isfile(candidate):
-            return candidate
-    return shutil.which("nvidia-smi")
+        ):
+            if os.path.isfile(known):
+                return known
+    try:
+        here = Path.cwd()
+    except OSError:
+        here = None
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not entry or not os.path.isabs(entry):
+            continue
+        folder = Path(entry)
+        if (here is not None and _is_inside(folder, here)) or (avoid is not None and _is_inside(folder, avoid)):
+            continue
+        for name in names:
+            candidate = folder / name
+            try:
+                if candidate.is_file() and os.access(candidate, os.X_OK):
+                    return str(candidate)
+            except OSError:
+                continue
+    return None
 
 
 def _run_smi(exe: str, args: list[str]) -> subprocess.CompletedProcess:
@@ -84,8 +111,8 @@ def _first_line(text: str) -> str:
     return ""
 
 
-def read_gpu() -> GpuInfo:
-    exe = _nvidia_smi_path()
+def read_gpu(avoid: Path | None = None) -> GpuInfo:
+    exe = _nvidia_smi_path(avoid)
     if exe is None:
         return GpuInfo(state="none")
     try:
@@ -216,7 +243,9 @@ def _compare(torch: TorchBuild, gpu: GpuInfo) -> Finding:
                    f"metadata. Your driver supports up to CUDA {_fmt(gpu.cuda)}.",
             fix='python -c "import torch; print(torch.version.cuda, torch.cuda.is_available())"',
         )
-    assert torch.cuda is not None
+    if torch.cuda is None:  # cannot happen for a "cuda" build; stay safe if it ever does
+        return Finding(check=CHECK, severity=Severity.info, title="PyTorch CUDA version unknown",
+                       detail=f"{label} did not record its CUDA version.")
     if torch.cuda <= gpu.cuda:
         return Finding(check=CHECK, severity=Severity.ok, title="PyTorch CUDA build matches the driver",
                        detail=f"{label} is built for CUDA {_fmt(torch.cuda)}; the driver supports up to CUDA {_fmt(gpu.cuda)}.")
@@ -264,7 +293,7 @@ def run(project: Path) -> list[Finding]:
             builds[name] = classify_torch(version)
     torch = builds.get("torch")
 
-    gpu = read_gpu()
+    gpu = read_gpu(project)
     findings = [_gpu_finding(gpu, torch_is_cuda=bool(torch and torch.kind in ("cuda", "cuda-default")))]
 
     if torch is not None:

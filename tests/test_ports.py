@@ -63,3 +63,31 @@ def test_ports_are_checked_in_parallel(monkeypatch):
     start = time.time()
     ports.run(list(range(20000, 20040)))  # 40 ports + 12 common, sequential would take ~15s
     assert time.time() - start < 3
+
+
+def test_ipv4_and_ipv6_are_probed_at_the_same_time(monkeypatch):
+    """One closed port must cost about one timeout, not two."""
+    import time as _time
+
+    def slow_closed(family, host, port):
+        _time.sleep(0.25)
+        return False
+    monkeypatch.setattr(ports, "_connects", slow_closed)
+    start = _time.perf_counter()
+    assert ports._in_use(5555) is False
+    assert _time.perf_counter() - start < 0.45  # two sequential tries would take 0.5 s
+
+
+def test_twelve_closed_ports_finish_within_about_one_timeout(monkeypatch):
+    import time as _time
+    monkeypatch.setattr(ports, "_connects", lambda f, h, p: (_time.sleep(0.25), False)[1])
+    start = _time.perf_counter()
+    assert ports._probe(list(range(6000, 6012))) == {p: False for p in range(6000, 6012)}
+    assert _time.perf_counter() - start < 0.8
+
+
+def test_either_family_connecting_counts_as_in_use(monkeypatch):
+    monkeypatch.setattr(ports, "_connects", lambda f, h, p: f == ports.socket.AF_INET6)
+    assert ports._in_use(1234) is True
+    monkeypatch.setattr(ports, "_connects", lambda f, h, p: f == ports.socket.AF_INET)
+    assert ports._in_use(1234) is True

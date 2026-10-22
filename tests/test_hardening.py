@@ -62,7 +62,7 @@ def test_requirements_is_a_directory(project):
 
 
 def test_nightly_and_dev_torch_tags(monkeypatch, project, make_venv):
-    monkeypatch.setattr(gpu, "read_gpu", lambda: gpu.GpuInfo(state="ok", names=["G"], driver="1", cuda=(12, 8)))
+    monkeypatch.setattr(gpu, "read_gpu", lambda *a, **k: gpu.GpuInfo(state="ok", names=["G"], driver="1", cuda=(12, 8)))
     make_venv(project, packages={"torch": "2.6.0.dev20241112+cu121"})
     (project / "requirements.txt").write_text("torch\n")
     titles = [f.title for f in gpu.run(project)]
@@ -79,7 +79,7 @@ def test_nightly_and_dev_torch_tags(monkeypatch, project, make_venv):
 ])
 def test_weird_nvidia_smi_outputs(monkeypatch, tmp_path, body, expected_state):
     from tests.test_gpu import fake_smi
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: fake_smi(tmp_path, body))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: fake_smi(tmp_path, body))
     info = gpu.read_gpu()
     assert info.state == expected_state
     if info.state == "ok" and info.cuda is None:
@@ -92,7 +92,7 @@ def test_nvidia_smi_not_executable(monkeypatch, tmp_path):
     exe = tmp_path / "nvidia-smi"
     exe.write_text("#!/bin/sh\n")
     exe.chmod(0o644)
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: str(exe))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: str(exe))
     assert gpu.read_gpu().state == "failed"
 
 
@@ -137,7 +137,13 @@ def test_only_nvidia_smi_is_ever_executed(monkeypatch, project):
         return real_run(cmd, *a, **k)
 
     monkeypatch.setattr(gpu.subprocess, "run", spy)
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: os.path.join(str(project), "nvidia-smi"))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: os.path.join(str(project), "nvidia-smi"))
     gpu.read_gpu()
     assert all(os.path.basename(c[0]) == "nvidia-smi" for c in calls)
     assert all(a.startswith("--") or a == "" for c in calls for a in c[1:])
+
+
+def test_a_too_long_project_path_is_a_clean_error():
+    from diagnostics.safety import ProjectPathError, resolve_project_path
+    with pytest.raises(ProjectPathError):
+        resolve_project_path("a" * 5000)

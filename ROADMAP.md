@@ -13,7 +13,7 @@ Question it answers: **"Why won't this AI project run, and what do I fix first?"
 | 7 | GPU driver vs PyTorch CUDA build | `check_gpu` | PyTorch only; TensorFlow, JAX, ONNX Runtime next |
 | 8 | Runtime errors (CUDA out of memory, wrong model name, 429, API changes) | `explain_error` | planned |
 | - | One prioritized report from all checks | `diagnose` | done (start here) |
-| - | Local dashboard (localhost only) | FastAPI + web page | planned |
+| - | Local dashboard (localhost only) | FastAPI + web page (`python -m dashboard`): live streaming, folder picker, history, settings, themes | done |
 
 `scan_project` reads the project first and suggests which checks to run. It lists every third-party library the code imports (`other_libraries`), so no library is missed because it is not on a built-in list.
 

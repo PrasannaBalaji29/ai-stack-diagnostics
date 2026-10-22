@@ -18,7 +18,7 @@ def good_gpu(cuda=(12, 4)):
 @pytest.fixture
 def run_with(monkeypatch, project, make_venv):
     def _run(gpu_info, packages=None, requirements=None, venv=True):
-        monkeypatch.setattr(gpu, "read_gpu", lambda: gpu_info)
+        monkeypatch.setattr(gpu, "read_gpu", lambda *a, **k: gpu_info)
         monkeypatch.setattr(sys, "platform", "win32")  # default PyPI behaviour is tested separately
         if venv:
             make_venv(project, packages=packages or {})
@@ -93,11 +93,11 @@ def test_linux_default_cases(monkeypatch, project, make_venv):
     make_venv(project, packages={"torch": "2.5.1"})
     (project / "requirements.txt").write_text("torch\n")
     monkeypatch.setattr(sys, "platform", "linux")
-    monkeypatch.setattr(gpu, "read_gpu", lambda: NO_GPU)
+    monkeypatch.setattr(gpu, "read_gpu", lambda *a, **k: NO_GPU)
     f = gpu.run(project)
     assert "No NVIDIA GPU; PyTorch from PyPI is a CUDA build" in titles(f)
     assert not by_severity(f, "warning")
-    monkeypatch.setattr(gpu, "read_gpu", lambda: good_gpu())
+    monkeypatch.setattr(gpu, "read_gpu", lambda *a, **k: good_gpu())
     f = gpu.run(project)
     assert "PyTorch CUDA version is not recorded in the install" in titles(f)
 
@@ -181,7 +181,7 @@ posix_only = pytest.mark.skipif(sys.platform == "win32", reason="uses a shell-sc
 
 @posix_only
 def test_read_gpu_parses_real_output(monkeypatch, tmp_path):
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: fake_smi(tmp_path, SMI_OK))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: fake_smi(tmp_path, SMI_OK))
     info = gpu.read_gpu()
     assert info.state == "ok" and info.cuda == (12, 4) and info.driver == "551.61"
     assert info.names == ["NVIDIA GeForce RTX 3050 Laptop GPU"]
@@ -190,7 +190,7 @@ def test_read_gpu_parses_real_output(monkeypatch, tmp_path):
 @posix_only
 def test_read_gpu_driver_error(monkeypatch, tmp_path):
     body = "#!/bin/sh\necho \"NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver.\"\nexit 9\n"
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: fake_smi(tmp_path, body))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: fake_smi(tmp_path, body))
     info = gpu.read_gpu()
     assert info.state == "failed" and "couldn't communicate" in info.error
 
@@ -198,23 +198,78 @@ def test_read_gpu_driver_error(monkeypatch, tmp_path):
 @posix_only
 def test_read_gpu_timeout(monkeypatch, tmp_path):
     monkeypatch.setattr(gpu, "TIMEOUT", 0.3)
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: fake_smi(tmp_path, "#!/bin/sh\nsleep 5\n"))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: fake_smi(tmp_path, "#!/bin/sh\nsleep 5\n"))
     info = gpu.read_gpu()
     assert info.state == "failed" and "did not answer" in info.error
 
 
 @posix_only
 def test_read_gpu_garbage_output(monkeypatch, tmp_path):
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: fake_smi(tmp_path, "#!/bin/sh\nprintf '\\377\\376 garbage'\n"))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: fake_smi(tmp_path, "#!/bin/sh\nprintf '\\377\\376 garbage'\n"))
     assert gpu.read_gpu().state in ("ok", "failed")  # must not raise
 
 
 def test_read_gpu_not_installed(monkeypatch):
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: None)
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: None)
     assert gpu.read_gpu().state == "none"
 
 
 def test_read_gpu_cannot_execute(monkeypatch, tmp_path):
-    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda: str(tmp_path / "missing-binary"))
+    monkeypatch.setattr(gpu, "_nvidia_smi_path", lambda *a, **k: str(tmp_path / "missing-binary"))
     info = gpu.read_gpu()
     assert info.state == "failed" and "could not run" in info.error
+
+
+# ---- planted-program protection (a hostile project must never get its own nvidia-smi executed)
+
+def _plant(folder, body="#!/bin/sh\necho pwned > /tmp/pwned-marker\n"):
+    folder.mkdir(parents=True, exist_ok=True)
+    exe = folder / "nvidia-smi"
+    exe.write_text(body)
+    exe.chmod(0o755)
+    return exe
+
+
+@posix_only
+def test_program_inside_the_scanned_project_is_never_used(monkeypatch, tmp_path):
+    project = tmp_path / "hostile"
+    _plant(project / "bin")
+    monkeypatch.setenv("PATH", f"{project / 'bin'}{__import__('os').pathsep}/nonexistent")
+    assert gpu._nvidia_smi_path(avoid=project) is None
+
+
+@posix_only
+def test_program_in_the_current_folder_is_never_used(monkeypatch, tmp_path):
+    _plant(tmp_path / "here")
+    monkeypatch.chdir(tmp_path / "here")
+    monkeypatch.setenv("PATH", f"{tmp_path / 'here'}{__import__('os').pathsep}/nonexistent")
+    assert gpu._nvidia_smi_path() is None
+
+
+@posix_only
+def test_relative_and_empty_path_entries_are_ignored(monkeypatch, tmp_path):
+    _plant(tmp_path / "rel")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PATH", f"rel{__import__('os').pathsep}{__import__('os').pathsep}.")
+    assert gpu._nvidia_smi_path() is None
+
+
+@posix_only
+def test_a_normal_system_location_is_still_found(monkeypatch, tmp_path):
+    exe = _plant(tmp_path / "system-bin")
+    (tmp_path / "elsewhere").mkdir()
+    monkeypatch.chdir(tmp_path / "elsewhere")
+    monkeypatch.setenv("PATH", str(tmp_path / "system-bin"))
+    assert gpu._nvidia_smi_path(avoid=tmp_path / "some-project") == str(exe)
+
+
+@posix_only
+def test_end_to_end_a_hostile_project_cannot_run_its_program(monkeypatch, tmp_path):
+    marker = tmp_path / "marker"
+    project = tmp_path / "project"
+    _plant(project, f"#!/bin/sh\ntouch {marker}\n")
+    monkeypatch.chdir(project)
+    monkeypatch.setenv("PATH", f"{project}{__import__('os').pathsep}/nonexistent")
+    findings = gpu.run(project)
+    assert not marker.exists(), "the project's own nvidia-smi was executed!"
+    assert any("No NVIDIA GPU" in f.title for f in findings)

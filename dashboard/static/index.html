@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="dashboard-token" content="__TOKEN__">
+  <meta name="default-path" content="__DEFAULT_PATH__">
+  <title>AI Stack Diagnostics</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='none' stroke='%2322d3ee' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2322d3ee'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body data-status="idle" data-theme="dark" data-motion="full">
+  <!-- icon set: drawn here, nothing is loaded from the internet -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2.5l8.5 5v9l-8.5 5-8.5-5v-9z"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6M3 20h18"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5.2 5.2L3.5 17.5l3 3 5.8-5.8a4 4 0 0 0 5.2-5.2l-2.7 2.7-2.3-.5-.5-2.3z"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M12 12l8.5-4.7M12 12v9.5M12 12L3.5 7.3"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+    <symbol id="i-network" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.5 5.5M12 11.5l5.5 5.5"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5l12 7.5-12 7.5z" fill="currentColor"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4l2-2M20 20v-5h-5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  </svg>
+
+  <div class="scanbar" aria-hidden="true"></div>
+
+  <div class="app">
+    <aside class="sidebar" aria-label="Main">
+      <div class="brand">
+        <svg class="ic ic-logo" aria-hidden="true"><use href="#i-logo"/></svg>
+        <div><strong>AI Stack Diagnostics</strong><span>Read-only project health check</span></div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item" type="button" data-view="diagnostics" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg><span>Project Diagnostics</span></button>
+        <button class="nav-item" type="button" data-view="history"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg><span>Scan History</span></button>
+        <button class="nav-item" type="button" data-view="settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg><span>Settings</span></button>
+        <button class="nav-item" type="button" data-view="about"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>About</span></button>
+      </nav>
+      <div class="side-foot">
+        <svg class="ic ic-logo" aria-hidden="true"><use href="#i-logo"/></svg>
+        <div><strong>AI Stack Diagnostics</strong><span>v__VERSION__</span><span class="local"><i class="dot"></i>Localhost</span></div>
+      </div>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <span class="chip chip-live" id="live-chip" data-on="false"><i class="dot"></i><span id="live-chip-text">LIVE OFF</span></span>
+        <div class="seg" role="group" aria-label="Theme">
+          <button id="theme-light" type="button" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg>Light</button>
+          <button id="theme-dark" type="button" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg>Dark</button>
+        </div>
+        <button id="open-settings" class="icon-btn" type="button" aria-label="Open settings"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button>
+      </header>
+
+      <main>
+        <!-- ============ DIAGNOSTICS ============ -->
+        <section id="view-diagnostics" class="view" aria-labelledby="h-diag">
+          <h1 id="h-diag">Project Diagnostics</h1>
+          <p class="sub">Check your AI/ML project setup, dependencies, and configuration issues.</p>
+
+          <div class="bar card">
+            <label class="field"><span class="label">Project folder</span>
+              <span class="input-wrap"><svg class="ic" aria-hidden="true"><use href="#i-folder"/></svg>
+                <input id="path" type="text" list="recent" spellcheck="false" autocomplete="off" placeholder="C:\Users\you\dev\my-ai-project" aria-describedby="path-help"></span>
+              <datalist id="recent"></datalist>
+            </label>
+            <button id="browse" class="btn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-folder"/></svg><span>Browse</span></button>
+            <button id="run" class="btn btn-primary" type="button"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span>Run Diagnosis</span></button>
+            <button id="live-toggle" class="btn btn-live" type="button" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>Live Mode</span></button>
+            <label class="select-wrap"><span class="sr">Refresh every</span>
+              <select id="live-interval" aria-label="Refresh every"><option value="5">5s</option><option value="10" selected>10s</option><option value="30">30s</option></select></label>
+            <p id="path-help" class="help"><span id="live-countdown"></span> Press <kbd>Enter</kbd> to run &middot; <kbd>/</kbd> to focus this box. Nothing is installed, changed or deleted: fix commands are only suggestions.</p>
+          </div>
+
+          <div id="banner" class="banner" role="alert" hidden></div>
+
+          <section id="empty" class="hero card">
+            <svg viewBox="0 0 120 120" class="hero-art" aria-hidden="true"><circle cx="60" cy="60" r="54" class="hero-ring"/><circle cx="60" cy="60" r="36" class="hero-ring hero-ring-2"/><circle cx="60" cy="60" r="6" class="hero-core"/></svg>
+            <h2>Point it at a project</h2>
+            <p>Choose the folder of an AI/ML project and press <strong>Run Diagnosis</strong>. You get one score, a view of every layer (Python, libraries, keys, services, GPU) and a numbered list of what to fix first, with a live log of each step.</p>
+          </section>
+
+          <div id="dash" hidden>
+            <div class="dgrid">
+              <section class="card health" aria-labelledby="h-health">
+                <h3 class="card-title" id="h-health"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg>Project Health</h3>
+                <div class="gauge" role="img" aria-labelledby="status-text">
+                  <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="54"/><circle class="arc" id="gauge-arc" cx="60" cy="60" r="54" transform="rotate(-90 60 60)"/></svg>
+                  <div class="gauge-center"><span id="score-value" class="score">0</span><span class="score-max">/ 100</span></div>
+                </div>
+                <p id="status-text" class="status-text" aria-live="polite">&nbsp;</p>
+                <p id="summary" class="summary"></p>
+                <div id="counts" class="counts"></div>
+                <p id="passed-line" class="passed-line"></p>
+              </section>
+
+              <section class="card layers" aria-labelledby="h-layers">
+                <div class="card-head"><h3 class="card-title" id="h-layers"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>Layers Checked</h3><span id="layers-count" class="big-count">0 / 7</span></div>
+                <div class="bar-track" aria-hidden="true"><i id="layers-fill" class="bar-fill"></i></div>
+                <div id="tiles" class="tiles"></div>
+                <div id="tile-detail" class="tile-detail" hidden></div>
+              </section>
+
+              <section class="card chart-card" aria-labelledby="h-chart">
+                <div class="card-head"><h3 class="card-title" id="h-chart"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Score History</h3>
+                  <label class="select-wrap select-sm"><span class="sr">Number of runs</span><select id="history-range" aria-label="Number of runs"><option value="5" selected>Last 5 runs</option><option value="10">Last 10 runs</option><option value="30">Last 30 runs</option></select></label></div>
+                <svg id="chart" class="chart" viewBox="0 0 520 230" role="img" aria-label="Score history chart"></svg>
+                <p id="chart-note" class="muted"></p>
+              </section>
+
+              <section class="card fixes-card" aria-labelledby="h-fix">
+                <div class="card-head"><h3 class="card-title" id="h-fix"><svg class="ic" aria-hidden="true"><use href="#i-wrench"/></svg>What to Fix First</h3><span id="fix-count" class="badge"></span></div>
+                <div id="notes"></div>
+                <ol id="fixes" class="fixes"></ol>
+                <div id="all-good" class="all-good" hidden>
+                  <svg viewBox="0 0 120 120" aria-hidden="true" class="good-art"><circle cx="60" cy="60" r="38" class="good-ring"/><circle cx="60" cy="60" r="50" class="good-ring good-ring-2"/><path d="M42 61l13 13 24-26" class="good-check"/></svg>
+                  <strong>Everything looks good!</strong><span>No issues found. Your project environment is properly configured.</span>
+                </div>
+              </section>
+
+              <section class="card modules-card" aria-labelledby="h-mod">
+                <h3 class="card-title" id="h-mod"><svg class="ic" aria-hidden="true"><use href="#i-cube"/></svg>Scanned Modules</h3>
+                <div class="table-wrap"><table class="table" id="modules"><thead><tr><th>Module</th><th>Status</th><th>Details</th></tr></thead><tbody id="modules-body"></tbody></table></div>
+              </section>
+
+              <section class="card logs-card" aria-labelledby="h-logs">
+                <div class="card-head"><h3 class="card-title" id="h-logs"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Details &amp; Logs</h3>
+                  <span class="actions"><button id="log-download" class="btn btn-sm" type="button"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Download Log</button><button id="log-clear" class="btn btn-sm" type="button"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Clear</button></span></div>
+                <div class="tabs" role="tablist" aria-label="Details">
+                  <button id="tab-summary" role="tab" type="button" aria-selected="true" aria-controls="panel-summary">Summary</button>
+                  <button id="tab-logs" role="tab" type="button" aria-selected="false" aria-controls="panel-logs">Scan Logs</button>
+                  <button id="tab-env" role="tab" type="button" aria-selected="false" aria-controls="panel-env">Environment</button>
+                  <button id="tab-sys" role="tab" type="button" aria-selected="false" aria-controls="panel-sys">System Info</button>
+                </div>
+                <div id="panel-summary" class="panel" role="tabpanel" aria-labelledby="tab-summary"></div>
+                <div id="panel-logs" class="panel" role="tabpanel" aria-labelledby="tab-logs" hidden><ul id="log-list" class="loglist"></ul></div>
+                <div id="panel-env" class="panel" role="tabpanel" aria-labelledby="tab-env" hidden></div>
+                <div id="panel-sys" class="panel" role="tabpanel" aria-labelledby="tab-sys" hidden></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ HISTORY ============ -->
+        <section id="view-history" class="view" aria-labelledby="h-hist" hidden>
+          <h1 id="h-hist">Scan History</h1>
+          <p class="sub">Your recent diagnoses. Saved only in this browser, never sent anywhere.</p>
+          <div class="card">
+            <div class="card-head"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg>Recent scans</h3>
+              <button id="history-clear" class="btn btn-sm" type="button"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Clear history</button></div>
+            <p id="history-empty" class="empty-note">No scans yet. Run a diagnosis and it will appear here.</p>
+            <div class="table-wrap"><table class="table" id="history-table"><thead><tr><th>When</th><th>Project</th><th>Status</th><th>Score</th><th>Issues</th><th>Time</th><th></th></tr></thead><tbody id="history-body"></tbody></table></div>
+          </div>
+        </section>
+
+        <!-- ============ SETTINGS ============ -->
+        <section id="view-settings" class="view" aria-labelledby="h-set" hidden>
+          <h1 id="h-set">Settings</h1>
+          <p class="sub">Saved only in this browser.</p>
+          <div class="card settings">
+            <div class="row"><div><strong>Theme</strong><span class="muted">Dark, Light, or follow your computer.</span></div>
+              <div class="seg" role="group" aria-label="Theme choice"><button id="set-theme-dark" type="button" aria-pressed="true">Dark</button><button id="set-theme-light" type="button" aria-pressed="false">Light</button><button id="set-theme-system" type="button" aria-pressed="false">System</button></div></div>
+            <div class="row"><div><strong>Live mode interval</strong><span class="muted">How often Live Mode re-scans.</span></div>
+              <label class="select-wrap"><span class="sr">Default interval</span><select id="set-interval" aria-label="Default interval"><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="30">30 seconds</option></select></label></div>
+            <div class="row"><div><strong>History size</strong><span class="muted">How many scans to remember.</span></div>
+              <label class="select-wrap"><span class="sr">History size</span><select id="set-limit" aria-label="History size"><option value="10">10 scans</option><option value="30">30 scans</option><option value="100">100 scans</option></select></label></div>
+            <div class="row"><div><strong>Animations</strong><span class="muted">Automatic follows your computer's setting.</span></div>
+              <label class="select-wrap"><span class="sr">Animations</span><select id="set-motion" aria-label="Animations"><option value="auto">Automatic</option><option value="reduce">Reduced</option></select></label></div>
+            <div class="row"><div><strong>Saved data</strong><span class="muted">Removes history, recent folders and settings from this browser.</span></div>
+              <button id="set-clear-all" class="btn btn-danger" type="button">Clear all saved data</button></div>
+          </div>
+        </section>
+
+        <!-- ============ ABOUT ============ -->
+        <section id="view-about" class="view" aria-labelledby="h-about" hidden>
+          <h1 id="h-about">About</h1>
+          <p class="sub">Why won't this AI project run, and what do I fix first?</p>
+          <div class="about-grid">
+            <div class="card"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>What it does</h3>
+              <p>Point it at a project folder. It reads the project, runs only the checks that apply (Python version, libraries, imports, API keys, local services, GPU), and gives one prioritized report with a health score.</p>
+              <p>It also works inside Claude Desktop as an MCP server, using the same checks.</p></div>
+            <div class="card"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Safe by design</h3>
+              <ul class="plain"><li>Read-only: it never changes, installs or runs anything in your project.</li><li>Runs only on this computer (127.0.0.1); other websites cannot use it.</li><li>Secret values from <code>.env</code> are never shown, only the key names.</li><li>Fix commands are suggestions. Read each one before you run it.</li></ul></div>
+            <div class="card"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg>Shortcuts</h3>
+              <ul class="plain"><li><kbd>/</kbd> focus the folder box</li><li><kbd>Enter</kbd> run the diagnosis</li><li><kbd>Esc</kbd> close an opened layer</li></ul>
+              <p class="muted">Version __VERSION__ &middot; source: <a href="https://github.com/PrasannaBalaji29/ai-stack-diagnostics" target="_blank" rel="noopener noreferrer">github.com/PrasannaBalaji29/ai-stack-diagnostics</a></p></div>
+          </div>
+        </section>
+      </main>
+      <footer class="foot">Read-only &middot; 127.0.0.1 only &middot; secrets are never shown, only key names</footer>
+    </div>
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

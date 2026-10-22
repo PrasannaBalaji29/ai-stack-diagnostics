@@ -17,13 +17,19 @@ def resolve_project_path(path: str) -> Path:
     if not isinstance(path, str) or not path.strip():
         raise ProjectPathError("The project path is empty.")
     cleaned = path.strip().strip("\"'")
+    if any(ord(ch) < 32 for ch in cleaned):
+        raise ProjectPathError("The project path contains invalid (control) characters.")
     try:
         project = Path(cleaned).expanduser().resolve()
-    except (OSError, RuntimeError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         raise ProjectPathError(f"Cannot resolve the path: {exc}") from exc
-    if not project.exists():
+    try:
+        exists, is_dir = project.exists(), project.is_dir()
+    except OSError as exc:  # e.g. a path whose name is too long for the file system
+        raise ProjectPathError(f"Cannot read the path: {exc}") from exc
+    if not exists:
         raise ProjectPathError(f"Path does not exist: {project}")
-    if not project.is_dir():
+    if not is_dir:
         raise ProjectPathError(f"Not a directory: {project}")
     if project == Path(project.anchor):
         raise ProjectPathError("Refusing to scan a drive root. Pick a project folder.")

@@ -1,0 +1,74 @@
+name: CI
+on:
+  push: { branches: [master, main] }
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1"   # weekly: new vulnerabilities appear even when our code does not change
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python }}", cache: pip }
+      - run: python -m pip install -r requirements.txt
+      - run: ruff check .
+      - run: mypy diagnostics server.py dashboard
+      - run: python -m pytest -q
+
+  security:
+    name: security scans
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", cache: pip }
+      - run: python -m pip install -r requirements.txt
+      - name: Static security analysis (fails on medium or high findings)
+        run: bandit -c pyproject.toml -r diagnostics server.py dashboard -ll -ii
+      - name: Known-vulnerability scan of dependencies
+        run: pip-audit -r requirements.txt --progress-spinner off
+
+  frontend:
+    name: dashboard in a browser engine
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", cache: pip }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: tests/frontend/package-lock.json }
+      - run: python -m pip install -r requirements.txt
+      - run: npm ci --prefix tests/frontend
+      - run: npm audit --prefix tests/frontend
+      - run: python tests/frontend/run_e2e.py
+
+  parsers:
+    name: dashboard attacks with the lenient HTTP parser (httptools)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", cache: pip }
+      - run: python -m pip install -r requirements.txt httptools
+      - run: python -m pytest -q tests/test_dashboard_attacks.py tests/test_dashboard_app.py

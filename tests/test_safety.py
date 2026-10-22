@@ -87,3 +87,10 @@ def test_read_text_cp1252_fallback(tmp_path):
 
 def test_read_text_missing_returns_none(tmp_path):
     assert read_text(tmp_path / "nope.txt") is None
+
+
+def test_control_characters_in_path_give_a_clean_error():
+    from diagnostics.safety import ProjectPathError, resolve_project_path
+    for bad in ("\x00", "C:\\proj\x00evil", "a\nb", "a\tb", "\x1b[31m"):
+        with pytest.raises(ProjectPathError, match="invalid"):
+            resolve_project_path(bad)

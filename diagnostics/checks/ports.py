@@ -28,16 +28,22 @@ COMMON_AI_PORTS = {
 }
 
 
+_FAMILIES = ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1"))
+
+
+def _connects(family: int, host: str, port: int) -> bool:
+    try:
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            sock.settimeout(CONNECT_TIMEOUT)
+            return sock.connect_ex((host, port)) == 0
+    except OSError:
+        return False  # e.g. IPv6 is disabled on this machine
+
+
 def _in_use(port: int) -> bool:
-    for family, host in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
-        try:
-            with socket.socket(family, socket.SOCK_STREAM) as sock:
-                sock.settimeout(CONNECT_TIMEOUT)
-                if sock.connect_ex((host, port)) == 0:
-                    return True
-        except OSError:
-            continue  # e.g. IPv6 is disabled on this machine
-    return False
+    """IPv4 and IPv6 are tried at the same time, so one port costs one timeout, not two."""
+    with ThreadPoolExecutor(max_workers=len(_FAMILIES)) as pool:
+        return any(pool.map(lambda fam: _connects(fam[0], fam[1], port), _FAMILIES))
 
 
 def _probe(ports: list[int]) -> dict[int, bool]:
