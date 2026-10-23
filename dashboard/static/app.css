@@ -95,7 +95,7 @@ h1 { font-size: 1.9rem; letter-spacing: -.01em; }
 
 /* ---------- cards, buttons, fields ---------- */
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.15rem 1.25rem; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .04); min-width: 0; }
-.card-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .9rem; }
+.card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .75rem; margin-bottom: .9rem; }
 .card-title { display: flex; align-items: center; gap: .55rem; font-size: 1rem; font-weight: 700; margin-bottom: .9rem; }
 .card-head .card-title { margin-bottom: 0; }
 .card-title .ic { color: var(--cyan); }
@@ -240,7 +240,7 @@ input[type="text"] { width: 100%; padding: .78rem 0; background: none; border: 0
 .tabs button { font: inherit; font-size: .82rem; font-weight: 600; padding: .42rem .85rem; border-radius: .65rem; border: 1px solid var(--line); background: none; color: var(--muted); cursor: pointer; }
 .tabs button[aria-selected="true"] { color: #fff; border-color: transparent; background: linear-gradient(135deg, #2563eb, #3b82f6); }
 .panel { max-height: 19rem; overflow: auto; border: 1px solid var(--line); border-radius: .8rem; background: var(--field); padding: .75rem .9rem; }
-.actions { display: flex; gap: .5rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .loglist { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; font-family: var(--mono); font-size: .78rem; }
 .loglist li { display: flex; gap: .6rem; align-items: baseline; }
 .loglist .time { color: var(--muted); } .loglist .lvl { font-weight: 700; } .loglist .msg { overflow-wrap: anywhere; }
@@ -264,7 +264,7 @@ input[type="text"] { width: 100%; padding: .78rem 0; background: none; border: 0
 .toast[data-kind="fixed"] { border-color: rgba(52, 211, 153, .65); } .toast[data-kind="new"] { border-color: rgba(248, 113, 113, .65); }
 
 /* ---------- responsive ---------- */
-@media (max-width: 1280px) {
+@media (max-width: 1700px) {
   .dgrid { grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr); grid-template-areas: "health layers" "chart chart" "fixes modules" "logs logs"; }
 }
 @media (max-width: 900px) {
@@ -278,3 +278,23 @@ input[type="text"] { width: 100%; padding: .78rem 0; background: none; border: 0
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 body[data-motion="reduce"] *, body[data-motion="reduce"] *::before, body[data-motion="reduce"] *::after { animation: none !important; transition: none !important; }
+
+/* Light mode: crisp edges instead of glow. A glow looks good on a dark background but turns into a blurry
+   smudge on a light one, so every glow is switched off here and replaced by a small, tight shadow. */
+body[data-theme="light"] .arc,
+body[data-theme="light"] .chart .line,
+body[data-theme="light"] .good-check,
+body[data-theme="light"] .hero-core,
+body[data-theme="light"] .ic-logo { filter: none; }
+body[data-theme="light"] .score { text-shadow: none; }
+body[data-theme="light"] .passed-line::before,
+body[data-theme="light"] .bar-fill,
+body[data-theme="light"] .dot { box-shadow: none; }
+body[data-theme="light"] .btn-live[aria-pressed="true"] { box-shadow: 0 2px 8px rgba(5, 150, 105, .25); }
+body[data-theme="light"] .btn-primary { box-shadow: 0 2px 8px rgba(14, 165, 233, .28); }
+body[data-theme="light"] .btn-primary:hover:not(:disabled) { box-shadow: 0 3px 12px rgba(14, 165, 233, .34); }
+body[data-theme="light"] .nav-item[aria-current="page"] { box-shadow: 0 2px 8px rgba(37, 99, 235, .25); }
+body[data-theme="light"] .seg button[aria-pressed="true"] { box-shadow: 0 2px 8px rgba(37, 99, 235, .25); }
+body[data-theme="light"] .tile[aria-expanded="true"] { box-shadow: 0 0 0 1px var(--tile), 0 4px 12px rgba(30, 64, 130, .12); }
+body[data-theme="light"] .tile[data-s="scanning"] { animation-name: glow-light; }
+@keyframes glow-light { 50% { box-shadow: 0 0 0 1px var(--cyan), 0 2px 8px rgba(14, 165, 233, .2); } }
