@@ -1,8 +1,9 @@
-"""Checks whether the project's PyTorch build matches the machine's NVIDIA driver.
+"""Checks whether the project's GPU libraries match the machine's NVIDIA driver, and how full the GPU memory is.
 
-Read-only. It never imports torch (that is slow and can crash). It reads the torch
-version recorded in the venv (for example 2.5.1+cu121) and compares the CUDA version in
-that tag with the highest CUDA version the NVIDIA driver supports.
+Read-only. It never imports torch, TensorFlow and so on (that is slow and can crash). It reads the
+versions recorded in the venv (for example torch 2.5.1+cu121) and compares the CUDA version they need with
+the highest CUDA version the NVIDIA driver supports. PyTorch is checked here; TensorFlow, JAX, ONNX Runtime,
+CuPy and mixed CUDA libraries are checked in gpu_frameworks.py; AMD, Intel and Apple graphics in gpu_vendors.py.
 
 The only program it runs is nvidia-smi, with fixed arguments, no shell, and a timeout.
 """
@@ -19,6 +20,7 @@ from pathlib import Path
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
+from diagnostics.checks import gpu_frameworks, gpu_vendors
 from diagnostics.checks.python_env import _find_venvs, _installed
 from diagnostics.models import Finding, Severity
 from diagnostics.requirements import collect_requirements
@@ -33,6 +35,9 @@ PYTORCH_OLD_VERSIONS_PAGE = "https://pytorch.org/get-started/previous-versions/"
 _CUDA_RE = re.compile(r"CUDA Version:\s*(\d+)\.(\d+)")
 _CU_TAG_RE = re.compile(r"^cu(\d{2,3})$")
 _DRIVER_RE = re.compile(r"^\d+(?:\.\d+)*$")
+_MEMORY_RE = re.compile(r"^\s*(\d+)\s*,\s*(\d+)\s*$")
+MEMORY_FULL_PERCENT = 90
+MIN_MEMORY_MIB_TO_REPORT = 1024
 _TORCH_FAMILY = ("torch", "torchvision", "torchaudio")
 
 CudaVersion = tuple[int, int]
@@ -48,6 +53,7 @@ class GpuInfo:
     driver: str | None = None
     cuda: CudaVersion | None = None
     error: str | None = None
+    memory: list[tuple[int, int]] = field(default_factory=list)  # (total MiB, used MiB) for each GPU
 
 
 def _is_inside(path: Path, folder: Path) -> bool:
@@ -111,6 +117,22 @@ def _first_line(text: str) -> str:
     return ""
 
 
+def _read_memory(exe: str) -> list[tuple[int, int]]:
+    """GPU memory is a bonus: any problem here just means 'unknown', never a failed check."""
+    try:
+        result = _run_smi(exe, ["--query-gpu=memory.total,memory.used", "--format=csv,noheader,nounits"])
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+    if result.returncode != 0:
+        return []
+    memory: list[tuple[int, int]] = []
+    for line in result.stdout[:MAX_OUTPUT_CHARS].splitlines():
+        match = _MEMORY_RE.match(line)
+        if match:
+            memory.append((int(match.group(1)), int(match.group(2))))
+    return memory[:MAX_GPUS_SHOWN]
+
+
 def read_gpu(avoid: Path | None = None) -> GpuInfo:
     exe = _nvidia_smi_path(avoid)
     if exe is None:
@@ -134,7 +156,7 @@ def read_gpu(avoid: Path | None = None) -> GpuInfo:
         match = _CUDA_RE.search(full.stdout[:MAX_OUTPUT_CHARS]) if full.returncode == 0 else None
         if match:
             cuda = (int(match.group(1)), int(match.group(2)))
-        return GpuInfo(state="ok", names=names, driver=driver, cuda=cuda)
+        return GpuInfo(state="ok", names=names, driver=driver, cuda=cuda, memory=_read_memory(exe))
     except subprocess.TimeoutExpired:
         return GpuInfo(state="failed", error=f"nvidia-smi did not answer within {TIMEOUT:.0f} seconds")
     except OSError as exc:
@@ -167,6 +189,8 @@ def classify_torch(version: Version, platform: str | None = None) -> TorchBuild:
         return TorchBuild(version, "cuda", cuda=(int(digits[:-1]), int(digits[-1])), tag=tag)
     if tag.startswith("rocm"):
         return TorchBuild(version, "rocm", tag=tag)
+    if tag.startswith("xpu"):
+        return TorchBuild(version, "xpu", tag=tag)
     return TorchBuild(version, "other", tag=tag)
 
 
@@ -194,9 +218,36 @@ def _gpu_finding(gpu: GpuInfo, torch_is_cuda: bool) -> Finding:
     shown = gpu.names[:MAX_GPUS_SHOWN]
     extra = f" (+{len(gpu.names) - len(shown)} more)" if len(gpu.names) > len(shown) else ""
     cuda_text = f"supports up to CUDA {_fmt(gpu.cuda)}" if gpu.cuda else "CUDA version could not be read"
+    memory_text = ""
+    if gpu.memory:
+        parts = [f"{_gb(total)} GB memory, {_gb(used)} GB in use" for total, used in gpu.memory[:MAX_GPUS_SHOWN]]
+        memory_text = f" Memory: {'; '.join(parts)}."
     return Finding(
         check=CHECK, severity=Severity.ok, title=f"NVIDIA GPU detected ({len(gpu.names)})",
-        detail=f"{'; '.join(shown)}{extra}. Driver {gpu.driver or 'unknown'} {cuda_text}.",
+        detail=f"{'; '.join(shown)}{extra}. Driver {gpu.driver or 'unknown'} {cuda_text}.{memory_text}",
+    )
+
+
+def _gb(mib: int) -> str:
+    return f"{mib / 1024:.1f}"
+
+
+def _memory_finding(gpu: GpuInfo) -> Finding | None:
+    """Warn when the GPU memory is nearly full: models then fail to load or run out of memory."""
+    if gpu.state != "ok":
+        return None
+    full = [
+        (index, total, used) for index, (total, used) in enumerate(gpu.memory)
+        if total >= MIN_MEMORY_MIB_TO_REPORT and used * 100 >= total * MEMORY_FULL_PERCENT
+    ]
+    if not full:
+        return None
+    parts = [f"GPU {index}: {_gb(used)} of {_gb(total)} GB in use ({used * 100 // total}%)" for index, total, used in full]
+    return Finding(
+        check=CHECK, severity=Severity.warning, title="GPU memory is almost full",
+        detail=f"{'; '.join(parts)}. Another program (a game, Ollama, another Python process or a notebook) is "
+               "holding it, so loading a model can fail with 'CUDA out of memory'.",
+        fix="Close programs that use the GPU (see which with: nvidia-smi), or restart Ollama / the notebook kernel",
     )
 
 
@@ -215,6 +266,9 @@ def _compare(torch: TorchBuild, gpu: GpuInfo) -> Finding:
     if torch.kind == "rocm":
         return Finding(check=CHECK, severity=Severity.info, title="PyTorch is a ROCm (AMD) build",
                        detail=f"{label} targets AMD GPUs. This check only compares NVIDIA drivers.")
+    if torch.kind == "xpu":
+        return Finding(check=CHECK, severity=Severity.info, title="PyTorch is an Intel GPU (XPU) build",
+                       detail=f"{label} targets Intel GPUs. NVIDIA drivers are not involved; see the Intel findings.")
     if torch.kind == "other":
         return Finding(check=CHECK, severity=Severity.info, title="PyTorch build type not recognised",
                        detail=f"{label} has the build tag '+{torch.tag}'. It was not compared with the driver.")
@@ -280,6 +334,10 @@ def _family_mismatch(builds: dict[str, TorchBuild]) -> Finding | None:
 # --------------------------------------------------------------------- run
 
 
+def read_adapters() -> list[gpu_vendors.Adapter]:
+    return gpu_vendors.detect_adapters(sys.platform)
+
+
 def run(project: Path) -> list[Finding]:
     venvs = _find_venvs(project)
     installed = _installed(venvs[0]) if venvs else {}
@@ -295,6 +353,9 @@ def run(project: Path) -> list[Finding]:
 
     gpu = read_gpu(project)
     findings = [_gpu_finding(gpu, torch_is_cuda=bool(torch and torch.kind in ("cuda", "cuda-default")))]
+    memory_finding = _memory_finding(gpu)
+    if memory_finding:
+        findings.append(memory_finding)
 
     if torch is not None:
         findings.append(_compare(torch, gpu))
@@ -308,10 +369,13 @@ def run(project: Path) -> list[Finding]:
             detail=f"The project lists PyTorch, but it was not found in {where}, so no build comparison was done.",
             fix="pip install -r requirements.txt",
         ))
-    else:
+    others = gpu_frameworks.check(installed, gpu, sys.platform, torch_is_cpu=bool(torch and torch.kind == "cpu"))
+    if torch is None and not declared and not others:
         findings.append(Finding(
             check=CHECK, severity=Severity.info, title="Project does not use PyTorch",
             detail="No torch, torchvision or torchaudio in the requirements or the virtual environment. "
                    "Only the GPU itself was checked.",
         ))
+    findings.extend(others)
+    findings.extend(gpu_vendors.check(read_adapters(), installed, sys.platform, torch.kind if torch else None))
     return findings

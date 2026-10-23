@@ -19,7 +19,7 @@
     env_keys: { label: "Settings", sub: "API keys in .env", icon: "key" },
     ollama: { label: "Ollama", sub: "Local model server", icon: "server" },
     ports: { label: "Ports", sub: "Services and conflicts", icon: "network" },
-    gpu: { label: "GPU", sub: "Driver vs PyTorch", icon: "cpu" },
+    gpu: { label: "GPU", sub: "GPU, driver and ML libraries", icon: "cpu" },
   };
   const STATUS_LABEL = { ok: "OK", info: "INFO", warning: "WARNING", error: "ERROR", critical: "CRITICAL", skipped: "NOT NEEDED", queued: "QUEUED", scanning: "SCANNING" };
   const LOG_LEVEL = { ok: "INFO", info: "INFO", warning: "WARN", error: "ERROR", critical: "ERROR", queued: "INFO", skipped: "INFO", scanning: "INFO" };

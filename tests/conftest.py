@@ -60,3 +60,10 @@ def make_dist():
         if editable:
             (info / "direct_url.json").write_text('{"url":"file:///x","dir_info":{"editable":true}}')
     return _make
+
+
+@pytest.fixture(autouse=True)
+def _no_real_graphics_adapters(monkeypatch):
+    """Tests must not depend on the graphics cards of the machine running them."""
+    from diagnostics.checks import gpu
+    monkeypatch.setattr(gpu, "read_adapters", lambda: [])

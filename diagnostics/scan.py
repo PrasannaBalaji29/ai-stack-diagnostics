@@ -43,6 +43,11 @@ SIGNATURES: dict[str, tuple[str, str, int | None]] = {
     "llama-cpp-python": ("llama.cpp", "local-llm", None),
     "torch": ("PyTorch", "ml", None),
     "tensorflow": ("TensorFlow", "ml", None),
+    "jax": ("JAX", "ml", None),
+    "onnxruntime": ("ONNX Runtime", "ml", None),
+    "cupy": ("CuPy", "ml", None),
+    "bitsandbytes": ("bitsandbytes", "ml", None),
+    "flash-attn": ("FlashAttention", "ml", None),
     "transformers": ("Hugging Face Transformers", "ml", None),
     "sentence-transformers": ("Sentence-Transformers", "ml", None),
     "scikit-learn": ("scikit-learn", "ml", None),
@@ -60,8 +65,16 @@ SIGNATURES: dict[str, tuple[str, str, int | None]] = {
     "mcp": ("MCP", "protocol", None),
     "fastmcp": ("FastMCP", "protocol", None),
 }
+# libraries whose GPU setup check_gpu can compare with the NVIDIA driver
+GPU_LIBRARIES = (
+    "PyTorch", "TensorFlow", "JAX", "ONNX Runtime", "CuPy", "Hugging Face Transformers", "Sentence-Transformers",
+    "vLLM", "llama.cpp", "bitsandbytes", "FlashAttention",
+)
 # any package whose name starts with the prefix maps to the signature key
-PREFIXES = {"langchain-": "langchain", "llama-index-": "llama-index", "torchvision": "torch", "torchaudio": "torch"}
+PREFIXES = {
+    "langchain-": "langchain", "llama-index-": "llama-index", "torchvision": "torch", "torchaudio": "torch",
+    "tensorflow-": "tensorflow", "jaxlib": "jax", "jax-": "jax", "onnxruntime-": "onnxruntime", "cupy-": "cupy",
+}
 # import name -> package name, where they differ
 IMPORT_ALIASES = {
     "sentence_transformers": "sentence-transformers",
@@ -71,6 +84,7 @@ IMPORT_ALIASES = {
     "sklearn": "scikit-learn",
     "faiss": "faiss-cpu",
     "weaviate": "weaviate-client",
+    "flash_attn": "flash-attn",
     "google.generativeai": "google-generativeai",
 }
 
@@ -269,7 +283,7 @@ def scan(project: Path) -> dict:
         checks.append("check_ports")
     if "Ollama" in stack:
         checks.append("check_ollama")
-    if "PyTorch" in stack:
+    if any(name in stack for name in GPU_LIBRARIES):
         checks.append("check_gpu")
     if py_files or notebooks:
         checks.append("check_imports")

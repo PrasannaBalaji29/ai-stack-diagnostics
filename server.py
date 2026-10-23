@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from diagnostics.checks import compat, env_keys, gpu, imports, ollama, ports, python_env
+from diagnostics.checks import compat, env_keys, explain_error as explain_error_check, gpu, imports, ollama, ports, python_env
 from diagnostics.diagnose import diagnose as run_diagnose
 from diagnostics.registry import run_check
 from diagnostics.safety import ProjectPathError, resolve_project_path
@@ -20,7 +20,8 @@ INSTRUCTIONS = (
     "troubleshoot an AI/ML project on their machine, or gives a local folder path, call the `diagnose` tool "
     "with that path instead of using a sandbox, shell or file upload. It is read-only: it never changes files, "
     "never installs anything, and never returns secret values. Use the individual check_* tools only when the "
-    "user asks about one specific area."
+    "user asks about one specific area. When the user pastes an error message or traceback and asks what it means "
+    "or how to fix it, call `explain_error` with the text (and the project path if they gave one)."
 )
 
 mcp = MCPServer(
@@ -87,7 +88,7 @@ def check_ollama(model: str | None = None) -> list[dict]:
 
 @mcp.tool()
 def check_gpu(path: str) -> list[dict]:
-    """Check whether the project's PyTorch build matches the NVIDIA driver and CUDA version on this machine."""
+    """Check the GPU setup on this machine: whether the project's PyTorch, TensorFlow, JAX, ONNX Runtime and CuPy builds match the NVIDIA driver and CUDA version, mixed CUDA libraries, and how full the GPU memory is."""
     return run_check("gpu", lambda: gpu.run(resolve_project_path(path)))
 
 
@@ -101,6 +102,12 @@ def check_imports(path: str) -> list[dict]:
 def check_compat(path: str) -> list[dict]:
     """Check the venv's Python version against the project, and installed packages for version conflicts or missing dependencies."""
     return run_check("compat", lambda: compat.run(resolve_project_path(path)))
+
+
+@mcp.tool()
+def explain_error(error_text: str, path: str = "") -> list[dict]:
+    """Explain a pasted error message or Python traceback in plain words: the likely cause and the exact fix. Knows about 45 common AI/ML project errors (missing library, wrong Python, CUDA out of memory, API key or model name rejected, rate limits, Ollama, ChromaDB, MCP, pip and Windows problems). Optionally pass the project folder path so the answer can check what that project actually has installed. Read-only; never repeats secret keys."""
+    return run_check("explain_error", lambda: explain_error_check.run(error_text, resolve_project_path(path) if path.strip() else None))
 
 
 @mcp.prompt(

@@ -10,11 +10,11 @@ Question it answers: **"Why won't this AI project run, and what do I fix first?"
 | 4 | Packages conflicting with each other, missing dependencies | `check_compat` | done |
 | 5 | Settings and API keys (`.env`) | `check_env_and_keys` | done |
 | 6 | Services not running (Ollama, ports in use) | `check_ollama`, `check_ports` | done |
-| 7 | GPU driver vs PyTorch CUDA build | `check_gpu` | PyTorch only; TensorFlow, JAX, ONNX Runtime next |
-| 8 | Runtime errors (CUDA out of memory, wrong model name, 429, API changes) | `explain_error` | planned |
+| 7 | GPU driver vs PyTorch, TensorFlow, JAX, ONNX Runtime, CuPy; mixed CUDA libraries; GPU memory; AMD, Intel, Apple graphics | `check_gpu` | done |
+| 8 | Runtime errors: paste an error or traceback, get the cause and fix (about 45 known errors: missing library, CUDA out of memory, wrong model name, 401, 429, Ollama, ChromaDB, MCP, pip, Windows) | `explain_error` | done |
 | - | One prioritized report from all checks | `diagnose` | done (start here) |
 | - | Local dashboard (localhost only) | FastAPI + web page (`python -m dashboard`): live streaming, folder picker, history, settings, themes | done |
 
 `scan_project` reads the project first and suggests which checks to run. It lists every third-party library the code imports (`other_libraries`), so no library is missed because it is not on a built-in list.
 
-Known limits: only a venv inside the project folder is inspected (`.venv`, `venv`, `env`); conda environments are not read; local module names that match a library name can hide a missing library.
+Known limits: only a venv inside the project folder is inspected (`.venv`, `venv`, `env`); conda environments are not read; local module names that match a library name can hide a missing library. The GPU check compares NVIDIA drivers exactly; for AMD, Intel and Apple graphics it only says which library build can use them (there is no single driver number to compare, and GPU support lists change often). `llama-cpp-python` is not checked for a CUDA build because pip does not record it.

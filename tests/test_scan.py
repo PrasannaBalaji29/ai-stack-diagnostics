@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from diagnostics import scan as S
 
 
@@ -131,3 +133,34 @@ def test_scan_suggests_imports_and_compat(project, make_venv):
 
 def test_empty_folder_suggests_only_python_env(project):
     assert S.scan(project)["suggested_checks"] == ["check_python_env"]
+
+
+@pytest.mark.parametrize("requirement,label", [
+    ("tensorflow", "TensorFlow"), ("tensorflow-cpu", "TensorFlow"), ("jax", "JAX"), ("jaxlib", "JAX"),
+    ("jax-cuda12-plugin", "JAX"), ("onnxruntime", "ONNX Runtime"), ("onnxruntime-gpu", "ONNX Runtime"),
+    ("cupy-cuda12x", "CuPy"),
+])
+def test_other_gpu_libraries_suggest_the_gpu_check(project, requirement, label):
+    (project / "requirements.txt").write_text(f"{requirement}\n")
+    r = S.scan(project)
+    assert label in r["detected_stack"] and "check_gpu" in r["suggested_checks"]
+
+
+@pytest.mark.parametrize("requirement,label", [
+    ("transformers", "Hugging Face Transformers"), ("sentence-transformers", "Sentence-Transformers"),
+    ("vllm", "vLLM"), ("llama-cpp-python", "llama.cpp"), ("bitsandbytes", "bitsandbytes"), ("flash-attn", "FlashAttention"),
+])
+def test_libraries_that_use_the_gpu_through_pytorch_suggest_the_gpu_check(project, requirement, label):
+    (project / "requirements.txt").write_text(f"{requirement}\n")
+    r = S.scan(project)
+    assert label in r["detected_stack"] and "check_gpu" in r["suggested_checks"]
+
+
+def test_flash_attn_import_is_detected(project):
+    (project / "app.py").write_text("import flash_attn\n")
+    assert "FlashAttention" in S.scan(project)["detected_stack"]
+
+
+def test_a_plain_rag_project_still_skips_the_gpu_check(project):
+    (project / "requirements.txt").write_text("langchain\nchromadb\nopenai\nstreamlit\n")
+    assert "check_gpu" not in S.scan(project)["suggested_checks"]

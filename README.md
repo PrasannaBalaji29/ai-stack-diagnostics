@@ -13,7 +13,8 @@ Use it two ways: as an **MCP server** inside Claude Desktop, or through a **loca
 | Code vs environment | libraries imported in code but not installed or not listed; standard-library modules removed in new Python (`distutils`, `imp`, `cgi`...) | `check_imports` |
 | Settings | `.env` missing or keys left empty (key names only, never values) | `check_env_and_keys` |
 | Services | local Ollama and its models; ports already in use | `check_ollama`, `check_ports` |
-| Hardware | PyTorch CUDA build vs NVIDIA driver | `check_gpu` |
+| Hardware | NVIDIA driver vs PyTorch, TensorFlow, JAX, ONNX Runtime and CuPy builds; mixed CUDA libraries; GPU memory nearly full; AMD, Intel and Apple graphics (which library build can use them) | `check_gpu` |
+| Errors | paste an error or traceback: likely cause and exact fix in plain words (about 45 known errors); warns if the text contains a secret key | `explain_error` |
 | Everything | scan, run the needed checks, one report | **`diagnose`** |
 
 See [ROADMAP.md](ROADMAP.md) for what is next.
