@@ -66,7 +66,7 @@ body.scanning .scanbar { opacity: 1; }
 .nav { display: grid; gap: .3rem; }
 .nav-item { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .7rem .85rem; border: 1px solid transparent; border-radius: .8rem; background: none; color: var(--muted); font: inherit; font-weight: 600; text-align: left; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
 .nav-item:hover { color: var(--text); background: var(--btn); }
-.nav-item[aria-current="page"] { color: #fff; border-color: rgba(96, 165, 250, .5); background: linear-gradient(135deg, rgba(37, 99, 235, .85), rgba(59, 130, 246, .35)); box-shadow: 0 6px 22px rgba(37, 99, 235, .3); }
+.nav-item[aria-current="page"] { color: #fff; border-color: rgba(96, 165, 250, .5); background: linear-gradient(135deg, #2563eb, #3b82f6); box-shadow: 0 6px 22px rgba(37, 99, 235, .3); }
 .nav-item .ic { width: 1.25em; height: 1.25em; }
 .side-foot { margin-top: auto; display: flex; gap: .7rem; align-items: center; padding: .8rem; border: 1px solid var(--line); border-radius: .9rem; background: var(--panel); }
 .side-foot .ic-logo { width: 2rem; height: 2rem; }
@@ -175,7 +175,7 @@ input[type="text"] { width: 100%; padding: .78rem 0; background: none; border: 0
 /* ---------- layers ---------- */
 .bar-track { height: .5rem; border-radius: 999px; background: var(--track); overflow: hidden; margin-bottom: 1rem; }
 .bar-fill { display: block; height: 100%; width: var(--w, 0%); border-radius: 999px; background: linear-gradient(90deg, var(--cyan), var(--accent)); box-shadow: 0 0 .8rem var(--accent); transition: width .5s cubic-bezier(.22, 1, .36, 1); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.2rem, 1fr)); gap: .75rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: .75rem; }
 .tile { position: relative; display: grid; gap: .55rem; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: .85rem; border-radius: .9rem; border: 1px solid var(--line); background: var(--field); transition: transform .15s, border-color .2s, box-shadow .2s; --tile: var(--muted); }
 .tile:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--tile); }
 .tile:disabled { cursor: default; }
@@ -298,3 +298,26 @@ body[data-theme="light"] .seg button[aria-pressed="true"] { box-shadow: 0 2px 8p
 body[data-theme="light"] .tile[aria-expanded="true"] { box-shadow: 0 0 0 1px var(--tile), 0 4px 12px rgba(30, 64, 130, .12); }
 body[data-theme="light"] .tile[data-s="scanning"] { animation-name: glow-light; }
 @keyframes glow-light { 50% { box-shadow: 0 0 0 1px var(--cyan), 0 2px 8px rgba(14, 165, 233, .2); } }
+
+/* Light mode: clearer text. The grey-blue shades that look fine on a dark background were too pale on white,
+   and the dimmed "not needed" items were dimmed twice (grey text plus transparency). */
+body[data-theme="light"] {
+  --muted: #3d4f78; --faint: #566890;
+  --line: rgba(30, 64, 130, .2); --line-strong: rgba(30, 64, 130, .38);
+}
+body[data-theme="light"] .pill[data-zero="true"] { opacity: .9; }
+body[data-theme="light"] .st[data-s="skipped"] { opacity: 1; }
+body[data-theme="light"] .tile[data-s="skipped"] { opacity: .9; }
+body[data-theme="light"] .local { color: #047857 !important; }
+/* coloured badge text: one shade darker than the fills, so it reads on the pale tinted badges */
+body[data-theme="light"] .pill[data-sev="critical"], body[data-theme="light"] [data-sev="critical"].sev,
+body[data-theme="light"] .st[data-s="critical"], body[data-theme="light"] .st[data-s="broken"] { color: #b91c1c; }
+body[data-theme="light"] .pill[data-sev="error"], body[data-theme="light"] [data-sev="error"].sev,
+body[data-theme="light"] .st[data-s="error"] { color: #9a3412; }
+body[data-theme="light"] .pill[data-sev="warning"], body[data-theme="light"] [data-sev="warning"].sev,
+body[data-theme="light"] .st[data-s="warning"], body[data-theme="light"] .st[data-s="needs attention"],
+body[data-theme="light"] .fix-num { color: #92400e; }
+body[data-theme="light"] [data-sev="info"].sev, body[data-theme="light"] .st[data-s="info"] { color: #1d4ed8; }
+body[data-theme="light"] [data-sev="ok"].sev, body[data-theme="light"] .st[data-s="ok"],
+body[data-theme="light"] .st[data-s="healthy"] { color: #047857; }
+body[data-theme="light"] .st[data-s="scanning"] { color: #0e7490; }
