@@ -3,5 +3,5 @@
   "private": true,
   "type": "module",
   "scripts": { "test": "node e2e.mjs" },
-  "devDependencies": { "jsdom": "^26.0.0" }
+  "devDependencies": { "jsdom": "^30.1.3" }
 }
