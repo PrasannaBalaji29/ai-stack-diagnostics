@@ -25,7 +25,9 @@ def test_busy_and_free_port():
 
 
 def test_none_and_empty():
-    assert ports.run(None)[-1].title == "Common AI service ports in use"
+    last = ports.run(None)[-1]
+    assert last.title in ("Common AI service ports in use", "No common AI service ports in use")
+    assert (last.title == "Common AI service ports in use") == ("None of the common" not in last.detail)  # the title never contradicts the detail
     assert len(ports.run([])) == 1
 
 
@@ -91,3 +93,12 @@ def test_either_family_connecting_counts_as_in_use(monkeypatch):
     assert ports._in_use(1234) is True
     monkeypatch.setattr(ports, "_connects", lambda f, h, p: f == ports.socket.AF_INET)
     assert ports._in_use(1234) is True
+
+
+def test_the_note_title_matches_what_is_running(monkeypatch):
+    monkeypatch.setattr(ports, "_connects", lambda family, host, port: False)
+    quiet = ports.run(None)[-1]
+    assert quiet.title == "No common AI service ports in use" and "None of the common" in quiet.detail
+    monkeypatch.setattr(ports, "_connects", lambda family, host, port: port == 11434)
+    busy = ports.run(None)[-1]
+    assert busy.title == "Common AI service ports in use" and "11434" in busy.detail

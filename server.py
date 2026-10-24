@@ -3,6 +3,7 @@
 import logging
 import sys
 
+from dashboard import __version__
 from diagnostics.checks import compat, env_keys, explain_error as explain_error_check, gpu, imports, ollama, ports, python_env
 from diagnostics.diagnose import diagnose as run_diagnose
 from diagnostics.registry import run_check
@@ -26,6 +27,7 @@ INSTRUCTIONS = (
 
 mcp = MCPServer(
     "ai-stack-diagnostics",
+    version=__version__,
     title="AI Stack Diagnostics",
     description="Read-only diagnosis of AI/ML project setups on the user's own computer.",
     instructions=INSTRUCTIONS,
@@ -34,7 +36,7 @@ mcp = MCPServer(
 
 @mcp.tool()
 def ping() -> str:
-    """Check that the server is alive."""
+    """Check that the server is alive and reachable. Returns a short confirmation message; use it to test the connection before running a diagnosis."""
     return "ai-stack-diagnostics is running"
 
 

@@ -386,3 +386,32 @@ def test_only_the_two_known_static_files_are_served_from_a_fixed_table(client):
         assert client.get(f"/static/{name}").status_code == 200
     for bad in ("../app.py", "..%2fapp.py", "app.css/../../app.py", "index.html", "%2e%2e/app.py", "app.css%00"):
         assert client.get(f"/static/{bad}").status_code in (404, 400, 422), bad
+
+
+# ---- the launcher finds a free port by itself when none was asked for
+
+def test_default_port_busy_moves_to_the_next_free_one(monkeypatch, capsys):
+    seen = {}
+    monkeypatch.setattr(launcher.uvicorn, "run", lambda app, **kw: seen.update(kw))
+    monkeypatch.setattr(launcher, "_port_is_free", lambda port: port not in (8765, 8766))
+    assert launcher.main(["--no-browser"]) == 0
+    assert seen["port"] == 8767 and "http://127.0.0.1:8767" in capsys.readouterr().out
+
+
+def test_default_port_free_is_used(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(launcher.uvicorn, "run", lambda app, **kw: seen.update(kw))
+    monkeypatch.setattr(launcher, "_port_is_free", lambda port: True)
+    assert launcher.main(["--no-browser"]) == 0 and seen["port"] == 8765
+
+
+def test_all_default_ports_busy_gives_a_clear_error(monkeypatch, capsys):
+    monkeypatch.setattr(launcher, "_port_is_free", lambda port: False)
+    assert launcher.main(["--no-browser"]) == 2
+    assert "all in use" in capsys.readouterr().err
+
+
+def test_an_explicit_busy_port_is_still_refused(monkeypatch, capsys):
+    monkeypatch.setattr(launcher, "_port_is_free", lambda port: False)
+    assert launcher.main(["--no-browser", "--port", "9200"]) == 2
+    assert "already in use" in capsys.readouterr().err

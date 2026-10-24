@@ -321,3 +321,7 @@ body[data-theme="light"] [data-sev="info"].sev, body[data-theme="light"] .st[dat
 body[data-theme="light"] [data-sev="ok"].sev, body[data-theme="light"] .st[data-s="ok"],
 body[data-theme="light"] .st[data-s="healthy"] { color: #047857; }
 body[data-theme="light"] .st[data-s="scanning"] { color: #0e7490; }
+
+/* the button inside an expandable table row looks like plain text; keyboard users still get a clear focus ring */
+.row-toggle { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; text-align: left; cursor: pointer; width: 100%; }
+.row-toggle:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: .3rem; }

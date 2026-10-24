@@ -282,20 +282,22 @@
       const entry = (r.by_check || {})[name];
       const rows = entry ? entry.findings : [{ severity: "skipped", title: "Not used by this project", detail: "This project does not need this check, so it was skipped.", fix: null }];
       rows.forEach((f, rowIndex) => {
-        const tr = el("tr", "row"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", "false");
+        const tr = el("tr", "row");
         const mod = el("td");
         if (rowIndex === 0) { const m = el("span", "mod"); m.append(icon(info.icon), el("span", "", info.label)); mod.appendChild(m); }  // name once per group
         else mod.setAttribute("aria-label", info.label);
         const st = el("td"); st.appendChild(chip("st", f.severity));
-        tr.append(mod, st, el("td", "", f.title));
+        // a real button carries the open/closed state (a table row may not have aria-expanded); clicking anywhere in the row works too
+        const titleCell = el("td"); const toggleBtn = el("button", "row-toggle", f.title); toggleBtn.type = "button"; toggleBtn.setAttribute("aria-expanded", "false");
+        titleCell.appendChild(toggleBtn);
+        tr.append(mod, st, titleCell);
         const toggle = () => {
-          const open = tr.getAttribute("aria-expanded") === "true";
-          tr.setAttribute("aria-expanded", String(!open));
+          const open = toggleBtn.getAttribute("aria-expanded") === "true";
+          toggleBtn.setAttribute("aria-expanded", String(!open));
           if (open) { if (tr.nextSibling && tr.nextSibling.classList && tr.nextSibling.classList.contains("more")) tr.nextSibling.remove(); return; }
           const more = el("tr", "more"); const cell = el("td", "", f.detail + (f.fix ? `  Fix: ${f.fix}` : "")); cell.colSpan = 3; more.appendChild(cell); tr.after(more);
         };
         tr.addEventListener("click", toggle);
-        tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
         body.appendChild(tr);
       });
     }

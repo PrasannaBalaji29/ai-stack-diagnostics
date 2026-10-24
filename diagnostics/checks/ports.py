@@ -102,7 +102,8 @@ def run(wanted_ports: list | None = None) -> list[Finding]:
 
     running = [f"{p} ({name})" for p, name in COMMON_AI_PORTS.items() if status[p]]
     findings.append(Finding(
-        check=CHECK, severity=Severity.info, title="Common AI service ports in use",
+        check=CHECK, severity=Severity.info,
+        title="Common AI service ports in use" if running else "No common AI service ports in use",
         detail=", ".join(running) if running else "None of the common AI ports are in use.",
     ))
     return findings

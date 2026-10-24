@@ -1,6 +1,6 @@
 [project]
 name = "ai-stack-diagnostics"
-version = "0.1.0"
+version = "0.3.0"
 description = "Read-only MCP server that diagnoses AI/ML project setups"
 requires-python = ">=3.10"
 license = "MIT"

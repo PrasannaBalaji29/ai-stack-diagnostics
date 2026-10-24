@@ -107,7 +107,7 @@
           <div id="dash" hidden>
             <div class="dgrid">
               <section class="card health" aria-labelledby="h-health">
-                <h3 class="card-title" id="h-health"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg>Project Health</h3>
+                <h2 class="card-title" id="h-health"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg>Project Health</h2>
                 <div class="gauge" role="img" aria-labelledby="status-text">
                   <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="54"/><circle class="arc" id="gauge-arc" cx="60" cy="60" r="54" transform="rotate(-90 60 60)"/></svg>
                   <div class="gauge-center"><span id="score-value" class="score">0</span><span class="score-max">/ 100</span></div>
@@ -119,21 +119,21 @@
               </section>
 
               <section class="card layers" aria-labelledby="h-layers">
-                <div class="card-head"><h3 class="card-title" id="h-layers"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>Layers Checked</h3><span id="layers-count" class="big-count">0 / 7</span></div>
+                <div class="card-head"><h2 class="card-title" id="h-layers"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>Layers Checked</h2><span id="layers-count" class="big-count">0 / 7</span></div>
                 <div class="bar-track" aria-hidden="true"><i id="layers-fill" class="bar-fill"></i></div>
                 <div id="tiles" class="tiles"></div>
                 <div id="tile-detail" class="tile-detail" hidden></div>
               </section>
 
               <section class="card chart-card" aria-labelledby="h-chart">
-                <div class="card-head"><h3 class="card-title" id="h-chart"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Score History</h3>
+                <div class="card-head"><h2 class="card-title" id="h-chart"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Score History</h2>
                   <label class="select-wrap select-sm"><span class="sr">Number of runs</span><select id="history-range" aria-label="Number of runs"><option value="5" selected>Last 5 runs</option><option value="10">Last 10 runs</option><option value="30">Last 30 runs</option></select></label></div>
                 <svg id="chart" class="chart" viewBox="0 0 520 230" role="img" aria-label="Score history chart"></svg>
                 <p id="chart-note" class="muted"></p>
               </section>
 
               <section class="card fixes-card" aria-labelledby="h-fix">
-                <div class="card-head"><h3 class="card-title" id="h-fix"><svg class="ic" aria-hidden="true"><use href="#i-wrench"/></svg>What to Fix First</h3><span id="fix-count" class="badge"></span></div>
+                <div class="card-head"><h2 class="card-title" id="h-fix"><svg class="ic" aria-hidden="true"><use href="#i-wrench"/></svg>What to Fix First</h2><span id="fix-count" class="badge"></span></div>
                 <div id="notes"></div>
                 <ol id="fixes" class="fixes"></ol>
                 <div id="all-good" class="all-good" hidden>
@@ -143,12 +143,12 @@
               </section>
 
               <section class="card modules-card" aria-labelledby="h-mod">
-                <h3 class="card-title" id="h-mod"><svg class="ic" aria-hidden="true"><use href="#i-cube"/></svg>Scanned Modules</h3>
+                <h2 class="card-title" id="h-mod"><svg class="ic" aria-hidden="true"><use href="#i-cube"/></svg>Scanned Modules</h2>
                 <div class="table-wrap"><table class="table" id="modules"><thead><tr><th>Module</th><th>Status</th><th>Details</th></tr></thead><tbody id="modules-body"></tbody></table></div>
               </section>
 
               <section class="card logs-card" aria-labelledby="h-logs">
-                <div class="card-head"><h3 class="card-title" id="h-logs"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Details &amp; Logs</h3>
+                <div class="card-head"><h2 class="card-title" id="h-logs"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Details &amp; Logs</h2>
                   <span class="actions"><button id="log-download" class="btn btn-sm" type="button"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Download Log</button><button id="log-clear" class="btn btn-sm" type="button"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Clear</button></span></div>
                 <div class="tabs" role="tablist" aria-label="Details">
                   <button id="tab-summary" role="tab" type="button" aria-selected="true" aria-controls="panel-summary">Summary</button>
@@ -170,7 +170,7 @@
           <h1 id="h-hist">Scan History</h1>
           <p class="sub">Your recent diagnoses. Saved only in this browser, never sent anywhere.</p>
           <div class="card">
-            <div class="card-head"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg>Recent scans</h3>
+            <div class="card-head"><h2 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg>Recent scans</h2>
               <button id="history-clear" class="btn btn-sm" type="button"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Clear history</button></div>
             <p id="history-empty" class="empty-note">No scans yet. Run a diagnosis and it will appear here.</p>
             <div class="table-wrap"><table class="table" id="history-table"><thead><tr><th>When</th><th>Project</th><th>Status</th><th>Score</th><th>Issues</th><th>Time</th><th></th></tr></thead><tbody id="history-body"></tbody></table></div>
@@ -200,12 +200,12 @@
           <h1 id="h-about">About</h1>
           <p class="sub">Why won't this AI project run, and what do I fix first?</p>
           <div class="about-grid">
-            <div class="card"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>What it does</h3>
+            <div class="card"><h2 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>What it does</h2>
               <p>Point it at a project folder. It reads the project, runs only the checks that apply (Python version, libraries, imports, API keys, local services, GPU), and gives one prioritized report with a health score.</p>
               <p>It also works inside Claude Desktop as an MCP server, using the same checks.</p></div>
-            <div class="card"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Safe by design</h3>
+            <div class="card"><h2 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>Safe by design</h2>
               <ul class="plain"><li>Read-only: it never changes, installs or runs anything in your project.</li><li>Runs only on this computer (127.0.0.1); other websites cannot use it.</li><li>Secret values from <code>.env</code> are never shown, only the key names.</li><li>Fix commands are suggestions. Read each one before you run it.</li></ul></div>
-            <div class="card"><h3 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg>Shortcuts</h3>
+            <div class="card"><h2 class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-key"/></svg>Shortcuts</h2>
               <ul class="plain"><li><kbd>/</kbd> focus the folder box</li><li><kbd>Enter</kbd> run the diagnosis</li><li><kbd>Esc</kbd> close an opened layer</li></ul>
               <p class="muted">Version __VERSION__ &middot; source: <a href="https://github.com/PrasannaBalaji29/ai-stack-diagnostics" target="_blank" rel="noopener noreferrer">github.com/PrasannaBalaji29/ai-stack-diagnostics</a></p></div>
           </div>

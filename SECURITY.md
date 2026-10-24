@@ -10,6 +10,7 @@ Please report vulnerabilities privately through GitHub: **Security tab, "Report 
 - **Only the folder you choose.** Paths are validated; drive roots and your whole home folder are refused; symlinks that point outside the project are not followed; reads are size-capped.
 - **No secrets leave the machine through the tool.** `.env` files are read for key *names* only; values are never returned.
 - **Only two things are executed or contacted:** `nvidia-smi` (fixed arguments, never a copy found inside the scanned project or the current folder) and `GET` requests to a local Ollama on loopback. To recognise AMD, Intel and Apple graphics it only *reads* the Windows display-adapter registry key, `/sys/class/drm` on Linux, and the processor type on macOS; it runs no program for that.
+- **The terminal command (`python -m diagnostics`) is the same read-only code.** It reads a pasted error from standard input only when `--explain` is given, caps it at 200,000 characters, and never echoes secrets.
 - **`explain_error` never runs what you paste.** The pasted error text is only matched against a fixed list of known errors (patterns are bounded, text is capped, only the last lines are read). It is never executed, and it is never copied into the answer: only a few strictly validated names (a module, a port, a model) are reused. If the text looks like it contains an API key or password, the tool warns you without repeating it.
 
 ## The local dashboard (`python -m dashboard`)
