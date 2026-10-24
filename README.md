@@ -5,6 +5,17 @@ Point it at a project folder. It reads the project (never changes it), runs only
 
 Use it two ways: as an **MCP server** inside Claude Desktop, or through a **local dashboard** in your browser. Both run only on your computer.
 
+## The dashboard
+
+Pick a project folder (the **Browse** button opens a normal folder window, or paste the path), press **Run Diagnosis**, and get the health score, the layers that were checked and what to fix first. It has a dark and a light theme.
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-dark.png" alt="The dashboard in dark mode: a health score of 100, seven layers checked, scanned modules and details" width="100%">
+</p>
+<p align="center">
+  <img src="docs/screenshots/dashboard-light.png" alt="The same dashboard in light mode" width="100%">
+</p>
+
 ## What it checks
 | Layer | Examples | Tool |
 |---|---|---|
