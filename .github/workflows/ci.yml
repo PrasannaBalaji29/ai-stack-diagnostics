@@ -21,9 +21,9 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with: { persist-credentials: false }
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with: { python-version: "${{ matrix.python }}", cache: pip }
       - run: python -m pip install -r requirements.txt
       - run: ruff check .
@@ -35,9 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with: { persist-credentials: false }
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with: { python-version: "3.13", cache: pip }
       - run: python -m pip install -r requirements.txt
       - name: Static security analysis (fails on medium or high findings)
@@ -50,11 +50,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with: { persist-credentials: false }
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with: { python-version: "3.13", cache: pip }
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: tests/frontend/package-lock.json }
       - run: python -m pip install -r requirements.txt
       - run: npm ci --prefix tests/frontend
@@ -66,9 +66,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with: { persist-credentials: false }
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with: { python-version: "3.13", cache: pip }
       - run: python -m pip install -r requirements.txt httptools
       - run: python -m pytest -q tests/test_dashboard_attacks.py tests/test_dashboard_app.py

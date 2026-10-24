@@ -3,7 +3,14 @@ name = "ai-stack-diagnostics"
 version = "0.1.0"
 description = "Read-only MCP server that diagnoses AI/ML project setups"
 requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Prasanna Balaji L" }]
+keywords = ["mcp", "model-context-protocol", "ai", "ml", "diagnostics", "llm", "rag", "gpu", "cuda"]
 dependencies = ["mcp>=2.3,<3", "pydantic>=2", "packaging>=23", "tomli>=2; python_version < '3.11'"]
+
+[project.urls]
+Repository = "https://github.com/PrasannaBalaji29/ai-stack-diagnostics"
+Issues = "https://github.com/PrasannaBalaji29/ai-stack-diagnostics/issues"
 
 [project.optional-dependencies]
 dashboard = ["fastapi>=0.115", "uvicorn>=0.30"]

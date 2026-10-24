@@ -76,3 +76,7 @@ bandit -c pyproject.toml -r diagnostics server.py dashboard -ll -ii
 pip-audit -r requirements.txt
 npm ci --prefix tests/frontend ; python tests/frontend/run_e2e.py   # browser-engine test (needs Node.js)
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Prasanna Balaji L.
