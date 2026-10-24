@@ -34,3 +34,9 @@ Any web server on `localhost` can be attacked by *other websites open in your br
 - **Windows and real NVIDIA GPUs** are covered by simulated tests plus the author's own machine; other setups may behave differently. Please report any difference.
 - Only a virtual environment inside the project folder (`.venv`, `venv`, `env`) is inspected; conda environments are not.
 - Do not scan folders you do not trust **and then run the fix commands blindly**: read each command first.
+
+## Notes on code scanning (CodeQL)
+
+- **"Uncontrolled data used in path expression" on `resolve_project_path`:** this is by design. Choosing the folder to scan is the purpose of the tool, so the path does come from the user. The function resolves the path, requires an existing, readable folder, and refuses drive roots and the whole home folder. The dashboard only listens on localhost and every request needs the page's secret token.
+- **Static files:** the dashboard serves exactly two files from a fixed table. The requested name only selects a table entry; it is never joined to a folder path.
+- **Error messages:** the dashboard answers a refused path with one of a fixed set of sentences, never with the exception text or the path.

@@ -337,3 +337,52 @@ def test_duplicate_security_headers_are_refused(headers):
 
 def test_other_repeated_headers_are_still_allowed():
     assert _asgi_status([GOOD_HOST, (b"accept", b"text/html"), (b"accept", b"*/*"), (b"cookie", b"a=1"), (b"cookie", b"b=2")]) == 200
+
+
+# ---- refused paths only ever show fixed sentences, never exception text or the machine's details
+
+@pytest.mark.parametrize("path,code", [
+    ("", "empty"), ("   ", "empty"), ("bad\x07path", "control_chars"), ("/definitely/not/here/xyz", "missing"),
+])
+def test_a_refused_path_shows_a_fixed_sentence(client, path, code):
+    r = post(client, path)
+    assert r.status_code in (400, 422)
+    if r.status_code == 400:
+        assert r.json()["error"] == appmod._PATH_ERROR_TEXT[code]
+
+
+def test_a_file_instead_of_a_folder_is_refused_with_a_fixed_sentence(client, tmp_path):
+    f = tmp_path / "a.txt"
+    f.write_text("x")
+    r = post(client, str(f))
+    assert r.status_code == 400 and r.json()["error"] == appmod._PATH_ERROR_TEXT["not_dir"]
+    assert str(tmp_path) not in r.text
+
+
+def test_the_error_never_contains_the_path_or_system_text(client, tmp_path):
+    secret_name = "very-private-folder-name"
+    r = post(client, str(tmp_path / secret_name))
+    assert r.status_code == 400 and secret_name not in r.text and "Errno" not in r.text
+
+
+def test_every_error_code_has_a_fixed_sentence():
+    from diagnostics import safety
+    codes = {"empty", "control_chars", "unresolvable", "unreadable", "missing", "not_dir", "drive_root", "home", "no_permission"}
+    assert codes <= set(appmod._PATH_ERROR_TEXT) and "invalid" in appmod._PATH_ERROR_TEXT
+    assert safety.ProjectPathError("x").code == "invalid"
+    assert all("{" not in text and "Errno" not in text for text in appmod._PATH_ERROR_TEXT.values())
+
+
+def test_an_unknown_code_falls_back_to_the_generic_sentence():
+    from diagnostics.safety import ProjectPathError
+    r = appmod._path_error_response(ProjectPathError("secret detail C:\\Users\\x", "made-up-code"))
+    assert r.status_code == 400 and b"secret detail" not in r.body and b"cannot be used" in r.body
+
+
+def test_only_the_two_known_static_files_are_served_from_a_fixed_table(client):
+    assert set(appmod._STATIC_TABLE) == {"app.css", "app.js"}
+    for name, (path, _media) in appmod._STATIC_TABLE.items():
+        assert path.name == name and path.is_file()
+        assert client.get(f"/static/{name}").status_code == 200
+    for bad in ("../app.py", "..%2fapp.py", "app.css/../../app.py", "index.html", "%2e%2e/app.py", "app.css%00"):
+        assert client.get(f"/static/{bad}").status_code in (404, 400, 422), bad

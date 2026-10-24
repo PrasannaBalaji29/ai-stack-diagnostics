@@ -70,6 +70,28 @@ SECURITY_HEADERS = {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
 }
 _STATIC_FILES = {"app.css": "text/css; charset=utf-8", "app.js": "text/javascript; charset=utf-8"}
+# The two files that may be served, with their full paths fixed here. A request only picks a key from this table;
+# the requested name is never joined to a folder path.
+_STATIC_TABLE = {name: (STATIC_DIR / name, media) for name, media in _STATIC_FILES.items()}
+
+# What the browser is told when a project path is refused: fixed sentences only, never the exception text.
+_PATH_ERROR_TEXT = {
+    "empty": "Enter a project folder path.",
+    "control_chars": "The project path contains invalid (control) characters.",
+    "unresolvable": "That path could not be resolved.",
+    "unreadable": "That path could not be read.",
+    "missing": "That folder does not exist.",
+    "not_dir": "That path is not a folder.",
+    "drive_root": "Refusing to scan a drive root. Pick a project folder.",
+    "home": "Refusing to scan the whole home folder. Pick a project folder.",
+    "no_permission": "No permission to read that folder.",
+    "invalid": "That project path cannot be used.",
+}
+
+
+def _path_error_response(exc: ProjectPathError) -> JSONResponse:
+    text = _PATH_ERROR_TEXT.get(exc.code, _PATH_ERROR_TEXT["invalid"])
+    return JSONResponse({"error": text}, status_code=400)
 
 
 class DiagnoseRequest(BaseModel):
@@ -162,10 +184,11 @@ def create_app(token: str | None = None, default_path: str = "") -> FastAPI:
 
     @app.get("/static/{name}")
     async def static_file(name: str) -> Response:
-        media = _STATIC_FILES.get(name)  # only two known files: no path tricks possible
-        if media is None:
+        entry = _STATIC_TABLE.get(name)  # only two known files: no path tricks possible
+        if entry is None:
             return _reject(404, "Not found.")
-        return FileResponse(STATIC_DIR / name, media_type=media)
+        file_path, media = entry
+        return FileResponse(file_path, media_type=media)
 
     @app.get("/api/health")
     async def health() -> dict:
@@ -176,7 +199,7 @@ def create_app(token: str | None = None, default_path: str = "") -> FastAPI:
         try:
             project = resolve_project_path(body.path)
         except ProjectPathError as exc:
-            return JSONResponse({"error": str(exc)}, status_code=400)
+            return _path_error_response(exc)
         if gate.locked():
             return _reject(429, "Two diagnoses are already running. Try again in a moment.")
         started = time.perf_counter()
@@ -200,7 +223,7 @@ def create_app(token: str | None = None, default_path: str = "") -> FastAPI:
         try:
             project = resolve_project_path(body.path)
         except ProjectPathError as exc:
-            return JSONResponse({"error": str(exc)}, status_code=400)
+            return _path_error_response(exc)
         if gate.locked():
             return _reject(429, "Two diagnoses are already running. Try again in a moment.")
         await gate.acquire()
