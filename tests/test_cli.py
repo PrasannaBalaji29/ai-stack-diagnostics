@@ -146,8 +146,12 @@ def test_help_is_available(flag, capsys):
 
 
 def test_one_version_everywhere():
-    import tomllib
     from pathlib import Path
+
+    try:
+        import tomllib
+    except ImportError:  # Python 3.10 has no tomllib; tomli is the same parser
+        import tomli as tomllib
 
     import dashboard
     root = Path(__file__).resolve().parent.parent

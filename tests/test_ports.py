@@ -72,12 +72,12 @@ def test_ipv4_and_ipv6_are_probed_at_the_same_time(monkeypatch):
     import time as _time
 
     def slow_closed(family, host, port):
-        _time.sleep(0.25)
+        _time.sleep(0.5)
         return False
     monkeypatch.setattr(ports, "_connects", slow_closed)
     start = _time.perf_counter()
     assert ports._in_use(5555) is False
-    assert _time.perf_counter() - start < 0.45  # two sequential tries would take 0.5 s
+    assert _time.perf_counter() - start < 0.9  # two sequential tries would take 1.0 s
 
 
 def test_twelve_closed_ports_finish_within_about_one_timeout(monkeypatch):

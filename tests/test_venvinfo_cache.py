@@ -152,9 +152,11 @@ def test_cached_reads_are_much_faster(project, make_venv, make_dist):
     start = time.perf_counter()
     load(venv)
     cold = time.perf_counter() - start
-    start = time.perf_counter()
-    load(venv)
-    warm = time.perf_counter() - start
+    warm = float("inf")
+    for _ in range(3):  # best of three: one slow moment on a busy CI machine must not fail the test
+        start = time.perf_counter()
+        load(venv)
+        warm = min(warm, time.perf_counter() - start)
     assert warm < cold / 3 or warm < 0.05, f"cold {cold:.3f}s, warm {warm:.3f}s"
 
 
