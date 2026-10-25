@@ -1,9 +1,15 @@
 # ai-stack-diagnostics
 
+[![CI](https://github.com/PrasannaBalaji29/ai-stack-diagnostics/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/PrasannaBalaji29/ai-stack-diagnostics/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/PrasannaBalaji29/ai-stack-diagnostics/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/PrasannaBalaji29/ai-stack-diagnostics/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.10 to 3.13](https://img.shields.io/badge/python-3.10%20to%203.13-blue)
+![Windows, macOS, Linux](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
+
 **Why won't this AI project run, and what do I fix first?**
 Point it at a project folder. It reads the project (never changes it), runs only the checks that apply, and gives **one prioritized report**: a health score and a numbered list of fixes.
 
-Use it two ways: as an **MCP server** inside Claude Desktop, or through a **local dashboard** in your browser. Both run only on your computer.
+Use it three ways: as an **MCP server** inside Claude Desktop, through a **local dashboard** in your browser, or with a **terminal command**. All of them run only on your computer.
 
 ## The dashboard
 
@@ -113,6 +119,9 @@ bandit -c pyproject.toml -r diagnostics server.py dashboard -ll -ii
 pip-audit -r requirements.txt
 npm ci --prefix tests/frontend ; python tests/frontend/run_e2e.py   # browser-engine test (needs Node.js)
 ```
+
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports and new known-error patterns are welcome; please read the [Code of Conduct](CODE_OF_CONDUCT.md) and the [security policy](SECURITY.md).
 
 ## License
 

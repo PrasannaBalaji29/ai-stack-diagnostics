@@ -1,0 +1,48 @@
+name: Bug report
+description: Something does not work or gives a wrong result
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Never paste API keys, tokens or passwords.** Remove them from anything you attach.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what did you get instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How did you run it?
+      options: ["Claude Desktop (MCP server)", "Dashboard (python -m dashboard)", "Terminal (python -m diagnostics)", "Other"]
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: ["Windows", "macOS", "Linux", "Other"]
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python --version`
+      placeholder: "Python 3.12.4"
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or error
+      description: Paste the error text, or the output of `python -m diagnostics --json` (after removing anything private).
+      render: text
+  - type: input
+    id: gpu
+    attributes:
+      label: Graphics card (only if the GPU check is involved)
+      placeholder: "NVIDIA RTX 3050 / AMD Radeon / Intel Arc / Apple M2 / none"

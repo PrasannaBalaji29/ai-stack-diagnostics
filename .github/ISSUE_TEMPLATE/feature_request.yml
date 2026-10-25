@@ -1,0 +1,21 @@
+name: Feature request
+description: An idea for a new check, a known error to explain, or a dashboard improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe a situation where the tool did not help you.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like it to do?
+  - type: textarea
+    id: error
+    attributes:
+      label: Example error text (for a new known error)
+      description: Paste the error without any secrets.
+      render: text
